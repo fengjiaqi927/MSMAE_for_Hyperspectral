@@ -1,0 +1,29 @@
+# 忽略 Python 的缓存文件
+__pycache__/
+*.pyc
+*.pyo
+
+# 忽略 IDE 配置文件
+.idea/
+.vscode/
+
+# 忽略日志文件
+*.log
+
+# 忽略临时文件
+*.tmp
+*.swp
+.DS_Store
+
+# 忽略特定目录
+SegMunich/
+downstream_predict/
+
+# 忽略压缩包和二进制文件
+*.zip
+*.tar.gz
+*.exe
+*.dll
+
+# 忽略 Git 历史相关文件
+*.orig
