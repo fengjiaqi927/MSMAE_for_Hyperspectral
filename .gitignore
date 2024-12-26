@@ -18,6 +18,7 @@ __pycache__/
 # 忽略特定目录
 SegMunich/
 downstream_predict/
+multi_train/
 
 # 忽略压缩包和二进制文件
 *.zip

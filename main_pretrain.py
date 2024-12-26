@@ -173,7 +173,6 @@ def main(args):
         pin_memory=args.pin_mem,
         drop_last=True,
         # prefetch_factor=8,
-
     )
 
     # define the model
