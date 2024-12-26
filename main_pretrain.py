@@ -206,7 +206,10 @@ def main(args):
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['pos_embed_spatial', 'pos_embed', 'decoder_pos_embed', 'patch_embed.proj.weight',
-                  'decoder_pos_embed_spatial', 'patch_embed.proj.bias', 'head.weight', 'head.bias']:
+                  'decoder_pos_embed_spatial', 'patch_embed.proj.bias', 'head.weight', 'head.bias',
+                  # 光谱维度增加重新初始化位置编码
+                  'pos_embed_temporal','decoder_pos_embed_temporal'
+                  ]:
             # for k in ['pos_embed', 'decoder_pos_embed', 'patch_embed.proj.weight',
             #                'patch_embed.proj.bias', 'head.weight', 'head.bias']:
             if k in checkpoint['model'] and checkpoint['model'][k].shape != state_dict[k].shape:

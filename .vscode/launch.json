@@ -36,7 +36,7 @@
                 // HySpecNet11k
                 // "--master_port=29502",
                 // "--wandb=spectralgpt_pretrain_stage2",
-                "--batch_size=16",
+                "--batch_size=1",
                 "--accum_iter=32",
                 "--blr=0.0002",
                 "--epochs=200",
@@ -49,6 +49,7 @@
                 "--dataset_type=HySpecNet11k",
                 "--model=mae_vit_base_patch8_128",
                 "--train_path=./txt_file/hyspecnet-11k_pretrain.csv",
+                "--resume_different_size=./SegMunich/SpectralGPT+.pth",
                 "--output_dir=./experiments/pretrain_HySpecNet11k",
                 "--log_dir=./experiments/pretrain_HySpecNet11k"
             ]

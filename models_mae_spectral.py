@@ -441,7 +441,8 @@ class MaskedAutoencoderViT(nn.Module):
         t = T // u
         target_whole = target1.reshape(N, t, h * w, 192)  # 2,4,256,192
         target_spatial = target_whole.sum(dim=1)  # 2,4,192
-        print(target_spatial.shape)
+        # 训练时隐去
+        # print(target_spatial.shape)
         pred_whole = pred.reshape(N, t, h * w, 192)
         pred_spatial = pred_whole.sum(dim=1)
 
@@ -491,16 +492,17 @@ def mae_vit_base_patch8_96(**kwargs):
 
 
 def mae_vit_base_patch8_128(**kwargs):
+    # 注释掉方便从外部传参
     model = MaskedAutoencoderViT(
-        img_size=128,
+        # img_size=128,
         in_chans=1,
-        patch_size=8,
+        # patch_size=8,
         embed_dim=768,
         depth=12,
         num_heads=12,
         mlp_ratio=4,
-        num_frames=12,
-        pred_t_dim=12,
+        # num_frames=12,
+        # pred_t_dim=12,
         t_patch_size=3,
         mask_ratio=0.75,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
