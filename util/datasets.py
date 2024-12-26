@@ -18,6 +18,8 @@ from pathlib import Path
 
 import skimage.io as io
 
+import csv
+
 log = logging.getLogger()
 log.setLevel(logging.ERROR)
 
@@ -970,6 +972,7 @@ def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
     
     elif args.dataset_type == 'HySpecNet11k':
         split = 'train' if is_train else 'val'
+        root_dir = '/dev1/fengjq/Downloads/hyspecnet-11k/'
         dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split)
     else:
         raise ValueError(f"Invalid dataset type: {args.dataset_type}")
