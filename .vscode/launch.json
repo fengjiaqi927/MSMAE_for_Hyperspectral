@@ -12,11 +12,33 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
+
+                // bigearthnet_pretrain
                 // "--master_port=29502",
-                "--wandb=spectralgpt_pretrain_stage2",
+                // "--wandb=spectralgpt_pretrain_stage2",
+                // "--batch_size=16",
+                // "--accum_iter=32",
+                // "--blr=0.0001",
+                // "--epochs=200",
+                // "--warmup_epochs=20",
+                // "--num_workers=16",
+                // "--input_size=128",
+                // "--patch_size=8",
+                // "--mask_ratio=0.90",
+                // "--model_type=tensor",
+                // "--dataset_type=bigearthnet",
+                // "--model=mae_vit_base_patch8_128",
+                // "--train_path=./txt_file/bigearthnet_pretrain_result_demo.csv",
+                // "--resume_different_size=./SegMunich/SpectralGPT+.pth",
+                // "--output_dir=./experiments/pretrain_BEN",
+                // "--log_dir=./experiments/pretrain_BEN"
+
+                // HySpecNet11k
+                // "--master_port=29502",
+                // "--wandb=spectralgpt_pretrain_stage2",
                 "--batch_size=16",
                 "--accum_iter=32",
-                "--blr=0.0001",
+                "--blr=0.0002",
                 "--epochs=200",
                 "--warmup_epochs=20",
                 "--num_workers=16",
@@ -24,12 +46,11 @@
                 "--patch_size=8",
                 "--mask_ratio=0.90",
                 "--model_type=tensor",
-                "--dataset_type=bigearthnet",
+                "--dataset_type=HySpecNet11k",
                 "--model=mae_vit_base_patch8_128",
-                "--train_path=./txt_file/bigearthnet_pretrain_result_demo.csv",
-                "--resume_different_size=./SegMunich/SpectralGPT+.pth",
-                "--output_dir=./experiments/pretrain_BEN",
-                "--log_dir=./experiments/pretrain_BEN"
+                "--train_path=./txt_file/hyspecnet-11k_pretrain.csv",
+                "--output_dir=./experiments/pretrain_HySpecNet11k",
+                "--log_dir=./experiments/pretrain_HySpecNet11k"
             ]
         }
     ]

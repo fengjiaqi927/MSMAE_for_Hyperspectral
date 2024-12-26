@@ -88,7 +88,7 @@ def get_args_parser():
     parser.add_argument('--train_path', default='', type=str,
                         help='Train.csv path')
     parser.add_argument('--dataset_type', default='sentinel',
-                        choices=['rgb',  'sentinel', 'euro_sat', 'bigearthnet'],
+                        choices=['rgb',  'sentinel', 'euro_sat', 'bigearthnet', 'HySpecNet11k'],
                         help='Whether to use fmow rgb, sentinel, or other dataset.')
     parser.add_argument('--masked_bands', type=int, nargs='+', default=None,
                         help='Sequence of band indices to mask (with mean val) in sentinel dataset')

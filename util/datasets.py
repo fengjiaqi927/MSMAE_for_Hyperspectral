@@ -838,6 +838,95 @@ class EuroSat(SatelliteDataset):
 
         return img_as_tensor, label
 
+class HySpecNet11k(SatelliteDataset):
+    """
+    Dataset:
+        HySpecNet-11k
+    Authors:
+        Martin Hermann Paul Fuchs
+        Begüm Demir
+    Related Paper:
+        HySpecNet-11k: A Large-Scale Hyperspectral Dataset for Benchmarking Learning-Based Hyperspectral Image Compression Methods
+        https://arxiv.org/abs/2306.00385
+    Cite: TODO
+        @misc{fuchs2023hyspecnet11k,
+            title={HySpecNet-11k: A Large-Scale Hyperspectral Dataset for Benchmarking Learning-Based Hyperspectral Image Compression Methods}, 
+            author={Martin Hermann Paul Fuchs and Begüm Demir},
+            year={2023},
+            eprint={2306.00385},
+            archivePrefix={arXiv},
+            primaryClass={cs.CV}
+        }
+
+    Folder Structure:
+        - root_dir/
+            - patches/
+                - tile_001/
+                    - tile_001-patch_01/
+                        - tile_001-patch_01-DATA.npy
+                        - tile_001-patch_01-QL_PIXELMASK.TIF
+                        - tile_001-patch_01-QL_QUALITY_CIRRUS.TIF
+                        - tile_001-patch_01-QL_QUALITY_CLASSES.TIF
+                        - tile_001-patch_01-QL_QUALITY_CLOUD.TIF
+                        - tile_001-patch_01-QL_QUALITY_CLOUDSHADOW.TIF
+                        - tile_001-patch_01-QL_QUALITY_HAZE.TIF
+                        - tile_001-patch_01-QL_QUALITY_SNOW.TIF
+                        - tile_001-patch_01-QL_QUALITY_TESTFLAGS.TIF
+                        - tile_001-patch_01-QL_SWIR.TIF
+                        - tile_001-patch_01-QL_VNIR.TIF
+                        - tile_001-patch_01-SPECTRAL_IMAGE.TIF
+                        - tile_001-patch_01-THUMBNAIL.jpg
+                    - tile_001-patch_02/
+                        - ...
+                    - ...
+                - tile_002/
+                    - ...
+                - ...
+            - splits/
+                - easy/
+                    - test.csv
+                    - train.csv
+                    - val.csv
+                - hard/
+                    - test.csv
+                    - train.csv
+                    - val.csv
+                - ...
+            - ...
+    """
+    def __init__(self, 
+                root_dir, 
+                mode: str = "easy", 
+                split: str = "train", 
+                transform=None):
+
+        super().__init__(in_c=224)
+        self.root_dir = root_dir
+
+        self.csv_path = os.path.join(self.root_dir, "splits", mode, f"{split}.csv")
+        with open(self.csv_path, newline='') as f:
+            csv_reader = csv.reader(f)
+            csv_data = list(csv_reader)
+            self.npy_paths = sum(csv_data, [])
+        self.npy_paths = [os.path.join(self.root_dir, "patches", x) for x in self.npy_paths]
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.npy_paths)
+
+    def __getitem__(self, index):
+        # get full numpy path
+        npy_path = self.npy_paths[index]
+        # read numpy data
+        img = np.load(npy_path)
+        # convert numpy array to pytorch tensor
+        img = torch.from_numpy(img)
+        # apply transformations
+        if self.transform:
+            img = self.transform(img)
+        return img
+
 
 def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
     """
@@ -878,6 +967,10 @@ def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
         mean, std = EuroSat.mean, EuroSat.std
         transform = EuroSat.build_transform(is_train, args.input_size, mean, std)
         dataset = EuroSat(csv_path, transform, masked_bands=args.masked_bands, dropped_bands=args.dropped_bands)
+    
+    elif args.dataset_type == 'HySpecNet11k':
+        split = 'train' if is_train else 'val'
+        dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split)
     else:
         raise ValueError(f"Invalid dataset type: {args.dataset_type}")
     print(dataset)
@@ -886,3 +979,4 @@ def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
 
  
    
+
