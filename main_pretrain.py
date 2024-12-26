@@ -188,8 +188,12 @@ def main(args):
                                                                spatial_mask=args.spatial_mask,
                                                                norm_pix_loss=args.norm_pix_loss)
     elif args.model_type == 'tensor':
-        model = models_mae_spectral.__dict__[args.model]()
-
+        model = models_mae_spectral.__dict__[args.model](
+            img_size=args.input_size,
+            patch_size=args.patch_size,
+            num_frames=dataset_train.in_c,
+            pred_t_dim=dataset_train.in_c
+        )
     else:
         model = models_mae.__dict__[args.model](img_size=args.input_size,
                                                 patch_size=args.patch_size,

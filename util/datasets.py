@@ -900,10 +900,15 @@ class HySpecNet11k(SatelliteDataset):
                 root_dir, 
                 mode: str = "easy", 
                 split: str = "train", 
-                transform=None):
+                transform=None,
+                dropped_bands: Optional[List[int]] = None):
 
-        super().__init__(in_c=224)
+        super().__init__(in_c=202)
         self.root_dir = root_dir
+
+        self.dropped_bands = dropped_bands
+        if self.dropped_bands is not None:
+            self.in_c = self.in_c - len(self.dropped_bands)
 
         self.csv_path = os.path.join(self.root_dir, "splits", mode, f"{split}.csv")
         with open(self.csv_path, newline='') as f:
@@ -925,9 +930,14 @@ class HySpecNet11k(SatelliteDataset):
         # convert numpy array to pytorch tensor
         img = torch.from_numpy(img)
         # apply transformations
+
+        if self.dropped_bands is not None:
+            keep_idxs = [i for i in range(img.shape[0]) if i not in self.dropped_bands]
+            img = img[keep_idxs, :, :]
+
         if self.transform:
             img = self.transform(img)
-        return img
+        return img, 'unlabeled'
 
 
 def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
@@ -973,7 +983,7 @@ def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
     elif args.dataset_type == 'HySpecNet11k':
         split = 'train' if is_train else 'val'
         root_dir = '/dev1/fengjq/Downloads/hyspecnet-11k/'
-        dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split)
+        dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, dropped_bands=[0])
     else:
         raise ValueError(f"Invalid dataset type: {args.dataset_type}")
     print(dataset)

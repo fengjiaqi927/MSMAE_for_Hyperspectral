@@ -2,6 +2,7 @@ import glob
 import multiprocessing
 import numpy as np
 import rasterio
+from tqdm import tqdm  # tqdm 是一个用于显示进度条的库
 
 in_directory = "/dev1/fengjq/Downloads/hyspecnet-11k/patches/"
 
@@ -29,4 +30,6 @@ def convert(patch_path):
 
 
 with multiprocessing.Pool(64) as pool:
-    pool.map(convert, in_patches)
+    for _ in tqdm(pool.imap_unordered(convert, in_patches), total=len(in_patches)):
+            pass
+    # pool.map(convert, in_patches)
