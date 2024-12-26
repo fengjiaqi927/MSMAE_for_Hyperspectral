@@ -19,6 +19,7 @@ from pathlib import Path
 import skimage.io as io
 
 import csv
+import random
 
 log = logging.getLogger()
 log.setLevel(logging.ERROR)
@@ -901,14 +902,14 @@ class HySpecNet11k(SatelliteDataset):
                 mode: str = "easy", 
                 split: str = "train", 
                 transform=None,
-                dropped_bands: Optional[List[int]] = None):
+                saved_bands_num: Optional[List[int]] = None):
 
         super().__init__(in_c=202)
         self.root_dir = root_dir
 
-        self.dropped_bands = dropped_bands
-        if self.dropped_bands is not None:
-            self.in_c = self.in_c - len(self.dropped_bands)
+        self.saved_bands_num = saved_bands_num
+        if self.saved_bands_num is not None:
+            self.in_c = int(sum(self.saved_bands_num))
 
         self.csv_path = os.path.join(self.root_dir, "splits", mode, f"{split}.csv")
         with open(self.csv_path, newline='') as f:
@@ -931,8 +932,10 @@ class HySpecNet11k(SatelliteDataset):
         img = torch.from_numpy(img)
         # apply transformations
 
-        if self.dropped_bands is not None:
-            keep_idxs = [i for i in range(img.shape[0]) if i not in self.dropped_bands]
+        if self.saved_bands_num is not None:
+            watershed = int(img.shape[0]/random.uniform(2.8, 3.2))
+            saved_bands = sorted(random.sample(range(watershed), self.saved_bands_num[0])+random.sample(range(watershed,img.shape[0]), self.saved_bands_num[1]))
+            keep_idxs = [i for i in range(img.shape[0]) if i in saved_bands]
             img = img[keep_idxs, :, :]
 
         if self.transform:
@@ -983,7 +986,8 @@ def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
     elif args.dataset_type == 'HySpecNet11k':
         split = 'train' if is_train else 'val'
         root_dir = '/dev1/fengjq/Downloads/hyspecnet-11k/'
-        dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, dropped_bands=[i for i in range(130)])
+        dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, saved_bands_num=[24,48])
+        # dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, dropped_bands=[i for i in range(130)])
     else:
         raise ValueError(f"Invalid dataset type: {args.dataset_type}")
     print(dataset)

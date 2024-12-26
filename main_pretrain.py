@@ -26,7 +26,7 @@ import util.misc as misc
 from util.datasets import build_fmow_dataset
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 import models_mae
@@ -192,7 +192,8 @@ def main(args):
             img_size=args.input_size,
             patch_size=args.patch_size,
             num_frames=dataset_train.in_c,
-            pred_t_dim=dataset_train.in_c
+            pred_t_dim=dataset_train.in_c,
+            mask_ratio=args.mask_ratio
         )
     else:
         model = models_mae.__dict__[args.model](img_size=args.input_size,
@@ -292,7 +293,8 @@ def main(args):
                 f.write(json.dumps(log_stats) + "\n")
 
             try:
-                wandb.log(log_stats)
+                print(log_stats)
+                # wandb.log(log_stats)
             except ValueError:
                 print(f"Invalid stats?")
 

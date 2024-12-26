@@ -504,7 +504,7 @@ def mae_vit_base_patch8_128(**kwargs):
         # num_frames=12,
         # pred_t_dim=12,
         t_patch_size=3,
-        mask_ratio=0.75,
+        # mask_ratio=0.75,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,
     )
