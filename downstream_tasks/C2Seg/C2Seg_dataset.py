@@ -102,7 +102,7 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         band = 10  # 116
         ## beijing is training, wuhan is testing
         train_file = r'/dev1/fengjq/dataset/crosscity_data/data/data2/beijing.mat'
-        train_file_label = r'data/data2/beijing_label.mat'
+        train_file_label = r'/dev1/fengjq/dataset/crosscity_data/data/data2/beijing_label.mat'
         col_train, row_train = 13474, 8706
         valid_file = r'/dev1/fengjq/dataset/crosscity_data/data/data2/wuhan.mat'
         valid_file_label = r'/dev1/fengjq/dataset/crosscity_data/data/data2/wuhan_label.mat'
@@ -135,6 +135,7 @@ def read_data(dataset, pca_flag=False, band_norm=False):
             del hsi
         else:
             hsi_cube = hsi
+            band = 116
 
         mm = nn.Upsample(scale_factor=3, mode='nearest', align_corners=None)
         # upsample from 30m to 10m
@@ -236,9 +237,9 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
                                          , axis=-1).astype(np.int32))
 
             subset_label = label1[0, :, :, 0]
-            subset_hsi = img1[:, :, :10]
-            subset_msi = img1[:, :, 10:14]
-            subset_sar = img1[:, :, 14:16]
+            subset_hsi = img1[:, :, :band]
+            subset_msi = img1[:, :, band:band+4]
+            subset_sar = img1[:, :, band+4:band+6]
 
         hsi_list.append(subset_hsi)
         msi_list.append(subset_msi)
@@ -271,9 +272,9 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
                                          , axis=-1).astype(np.int32))
 
             subset_label = label1[0, :, :, 0]
-            subset_hsi = img1[:, :, :10]
-            subset_msi = img1[:, :, 10:14]
-            subset_sar = img1[:, :, 14:16]
+            subset_hsi = img1[:, :, :band]
+            subset_msi = img1[:, :, band:band+4]
+            subset_sar = img1[:, :, band+4:band+6]
         hsi_valid_list.append(subset_hsi)
         msi_valid_list.append(subset_msi)
         sar_valid_list.append(subset_sar)
