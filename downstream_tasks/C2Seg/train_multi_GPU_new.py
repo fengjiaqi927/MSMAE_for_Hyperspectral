@@ -265,10 +265,10 @@ if __name__ == "__main__":
                         
 
     # C2Seg 数据集相关配置信息
-    parser.add_argument('--dataset', choices=['augsburg', 'beijing'], default='augsburg', type=str, help='dataset to use')
+    parser.add_argument('--dataset', choices=['augsburg', 'beijing'], default='beijing', type=str, help='dataset to use')
     parser.add_argument('--patch', default=128, type=int, help='input data size')
     parser.add_argument('--overlay', default=0.5, type=float, help='overlay size')
-    parser.add_argument('--pca_flag', default=True, type=bool, help='weather use PCA dimension reduction on dataset')  # 10
+    parser.add_argument('--pca_flag', default=False, type=bool, help='weather use PCA dimension reduction on dataset')  # 默认不用了
     parser.add_argument('--band_norm_flag', default=True, help='normalization by band')
     parser.add_argument('--aug_flag', default=True, help='use_augment')
 

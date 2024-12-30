@@ -41,7 +41,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, lr_scheduler, 
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
     # i = 0
-    for image, target in metric_logger.log_every(data_loader, print_freq, header):
+    for image, _, _, target in metric_logger.log_every(data_loader, print_freq, header):
+        # 排除掉不用的多光谱和SAR
         image, target = image.to(device), target.to(device)
 
         with torch.cuda.amp.autocast(enabled=scaler is not None):

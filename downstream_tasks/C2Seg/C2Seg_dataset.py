@@ -42,9 +42,9 @@ def band_normalization(data):
 def read_data(dataset, pca_flag=False, band_norm=False):
     if dataset == 'augsburg':
         num_classes, band = 14, 242
-        train_file = r'data/data1/augsburg_multimodal.mat'
+        train_file = r'/dev1/fengjq/dataset/crosscity_data/data/data1/augsburg_multimodal.mat'
         col_train, row_train = 1360, 886
-        valid_file = r'data/data1/berlin_multimodal.mat'
+        valid_file = r'/dev1/fengjq/dataset/crosscity_data/data/data1/berlin_multimodal.mat'
         col_valid, row_valid = 811, 2465
         input_data = sio.loadmat(train_file)
         valid_data = sio.loadmat(valid_file)
@@ -88,16 +88,24 @@ def read_data(dataset, pca_flag=False, band_norm=False):
             band = 10
 
             del hsi_matrix
+        else:
+            # 删除噪声波段
+            invalid_channels = [126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 160, 161, 162, 163, 164, 165, 166]
+            valid_channels_ids = [c+1 for c in range(224) if c not in invalid_channels]
+            hsi = hsi[:,:,valid_channels_ids]
+            hsi_valid = hsi_valid[:,:,valid_channels_ids]
+            band = 202
+            
 
     elif dataset == 'beijing':
         num_classes = 14
         band = 10  # 116
         ## beijing is training, wuhan is testing
-        train_file = r'data/data2/beijing.mat'
+        train_file = r'/dev1/fengjq/dataset/crosscity_data/data/data2/beijing.mat'
         train_file_label = r'data/data2/beijing_label.mat'
         col_train, row_train = 13474, 8706
-        valid_file = r'data/data2/wuhan.mat'
-        valid_file_label = r'data/data2/wuhan_label.mat'
+        valid_file = r'/dev1/fengjq/dataset/crosscity_data/data/data2/wuhan.mat'
+        valid_file_label = r'/dev1/fengjq/dataset/crosscity_data/data/data2/wuhan_label.mat'
         col_valid, row_valid = 6225, 8670
 
         with h5py.File(train_file, 'r') as f:
@@ -115,15 +123,18 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         msi = msi[cut_length:, :, :]
         sar = sar[cut_length:, :, :]
 
-        # applying PCA for HSI # hsi (116, 2903, 4492)
-        hsi_matrix = np.reshape(np.transpose(hsi), (hsi.shape[1] * hsi.shape[2], hsi.shape[0]))  # 2903*4492 116
-        pca = PCA(n_components=10)
-        pca.fit_transform(hsi_matrix)
-        newspace = pca.components_
-        newspace = newspace.transpose()  # 116*10
-        hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2903*4492 10
-        hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi.shape[2], hsi.shape[1], pca.n_components_)))
-        del hsi
+        if pca_flag:
+            # applying PCA for HSI # hsi (116, 2903, 4492)
+            hsi_matrix = np.reshape(np.transpose(hsi), (hsi.shape[1] * hsi.shape[2], hsi.shape[0]))  # 2903*4492 116
+            pca = PCA(n_components=10)
+            pca.fit_transform(hsi_matrix)
+            newspace = pca.components_
+            newspace = newspace.transpose()  # 116*10
+            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2903*4492 10
+            hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi.shape[2], hsi.shape[1], pca.n_components_)))
+            del hsi
+        else:
+            hsi_cube = hsi
 
         mm = nn.Upsample(scale_factor=3, mode='nearest', align_corners=None)
         # upsample from 30m to 10m
@@ -145,15 +156,18 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         msi_valid = np.transpose(f['MSI'])
         sar_valid = np.transpose(f['SAR'])
 
-        ## applying PCA for valid HSI
-        hsi_matrix = np.reshape(np.transpose(hsi_valid), (hsi_valid.shape[1] * hsi_valid.shape[2], hsi_valid.shape[0]))
-        pca = PCA(n_components=10)
-        pca.fit_transform(hsi_matrix)
-        newspace = pca.components_
-        newspace = newspace.transpose()
-        hsi_matrix = np.matmul(hsi_matrix, newspace)
-        hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi_valid.shape[2], hsi_valid.shape[1], pca.n_components_)))
-        del hsi_valid
+        if pca_flag:
+            ## applying PCA for valid HSI
+            hsi_matrix = np.reshape(np.transpose(hsi_valid), (hsi_valid.shape[1] * hsi_valid.shape[2], hsi_valid.shape[0]))
+            pca = PCA(n_components=10)
+            pca.fit_transform(hsi_matrix)
+            newspace = pca.components_
+            newspace = newspace.transpose()
+            hsi_matrix = np.matmul(hsi_matrix, newspace)
+            hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi_valid.shape[2], hsi_valid.shape[1], pca.n_components_)))
+            del hsi_valid
+        else:
+            hsi_cube = hsi_valid
 
         hsi1 = mm(torch.from_numpy(hsi_cube).unsqueeze(0)).squeeze().numpy()
         hsi_valid = np.transpose(hsi1)
