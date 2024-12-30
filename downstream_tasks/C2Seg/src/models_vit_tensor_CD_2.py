@@ -711,6 +711,7 @@ def vit_huge_patch14(**kwargs):
 
 
 def vit_base_patch8(**kwargs):
+    # 从外部传入光谱维度信息
     model = VisionTransformer(
         img_size=128,
         in_chans=1,
@@ -719,7 +720,7 @@ def vit_base_patch8(**kwargs):
         depth=12,
         num_heads=12,
         mlp_ratio=4,
-        num_frames=12,
+        # num_frames=12,
         t_patch_size=3,
         norm_layer=partial(nn.LayerNorm, eps=1e-6),
         **kwargs,

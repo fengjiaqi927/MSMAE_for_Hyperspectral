@@ -20,8 +20,8 @@ from util.pos_embed import interpolate_pos_embed
 # os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
-def create_model(nb_classes, weight_path, pretrain=False):
-    model = vit_base_patch8(num_classes=nb_classes)
+def create_model(nb_classes, weight_path, num_frames, pretrain=False):
+    model = vit_base_patch8(num_classes=nb_classes, num_frames=num_frames)
     # model = vit_large_patch8(num_classes=nb_classes)
 
     if pretrain:
@@ -34,7 +34,7 @@ def create_model(nb_classes, weight_path, pretrain=False):
         #     if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
         #         print(f"Removing key {k} from pretrained checkpoint")
         #         del checkpoint_model[k]
-        for k in ['pos_embed', 'patch_embed.proj.weight', 'patch_embed.proj.bias', 'head.weight', 'head.bias','pos_embed_spatial']:
+        for k in ['pos_embed', 'patch_embed.proj.weight', 'patch_embed.proj.bias', 'head.weight', 'head.bias']:
             if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
                 print(f"Removing key {k} from pretrained checkpoint")
                 del checkpoint_model[k]
@@ -62,7 +62,7 @@ def main(args):
     # segmentation nun_classes + background
     batch_size = args.batch_size
     # segmentation nun_classes + background
-    num_classes = args.num_classes + 1
+    # num_classes = args.num_classes + 1
     pretrain_path = args.pretrain_path
     warmup_epochs = args.warmup_epochs
     # 用来保存coco_info的文件
@@ -109,7 +109,7 @@ def main(args):
     print("Creating model")
     # create model num_classes equal background + foreground classes
     # model = create_model_Unet(num_classes=num_classes, weights=pretrain_path, pretrain=False)
-    model = create_model(nb_classes=num_classes, weight_path=pretrain_path, pretrain=True)
+    model = create_model(nb_classes=num_classes, weight_path=pretrain_path, num_frames=band, pretrain=True)
     # model = create_model(nb_classes=13, weight_path='./src/checkpoint-150.pth', pretrain=True)
     model.to(device)
 

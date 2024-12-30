@@ -89,7 +89,7 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
 # DeiT: https://github.com/facebookresearch/deit
 # --------------------------------------------------------
 def interpolate_pos_embed(model, checkpoint_model):
-    if 'pos_embed' in checkpoint_model:
+    if 'pos_embed' in layer:
         pos_embed_checkpoint = checkpoint_model['pos_embed']
         embedding_size = pos_embed_checkpoint.shape[-1]
         try:

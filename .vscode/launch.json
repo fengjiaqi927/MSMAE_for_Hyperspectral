@@ -55,7 +55,8 @@
 
                 // C2Seg finetune
                 "--amp=True",
-                "-b=12"
+                "-b=12",
+                "--pretrain-path=./experiments/pretrain_HySpecNet11k_without_pretrain/checkpoint-199.pth"
             ]
         }
     ]

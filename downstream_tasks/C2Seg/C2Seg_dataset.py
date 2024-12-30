@@ -89,12 +89,14 @@ def read_data(dataset, pca_flag=False, band_norm=False):
 
             del hsi_matrix
         else:
-            # 删除噪声波段
+            # 删除噪声波段,同时保证数据满足3的倍数
             invalid_channels = [126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 160, 161, 162, 163, 164, 165, 166]
             valid_channels_ids = [c+1 for c in range(224) if c not in invalid_channels]
+            # 202-1
+            valid_channels_ids = valid_channels_ids[:-1]
             hsi = hsi[:,:,valid_channels_ids]
             hsi_valid = hsi_valid[:,:,valid_channels_ids]
-            band = 202
+            band = 201
             
 
     elif dataset == 'beijing':
@@ -134,8 +136,10 @@ def read_data(dataset, pca_flag=False, band_norm=False):
             hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi.shape[2], hsi.shape[1], pca.n_components_)))
             del hsi
         else:
-            hsi_cube = hsi
-            band = 116
+            # 116+1
+            mean_matrix_expanded = np.expand_dims(np.mean(hsi, axis=0), axis=0)
+            hsi_cube = np.concatenate((hsi, mean_matrix_expanded), axis=0)
+            band = 117
 
         mm = nn.Upsample(scale_factor=3, mode='nearest', align_corners=None)
         # upsample from 30m to 10m
@@ -168,7 +172,9 @@ def read_data(dataset, pca_flag=False, band_norm=False):
             hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi_valid.shape[2], hsi_valid.shape[1], pca.n_components_)))
             del hsi_valid
         else:
-            hsi_cube = hsi_valid
+            # 116+1
+            mean_matrix_expanded = np.expand_dims(np.mean(hsi_valid, axis=0), axis=0)
+            hsi_cube = np.concatenate((hsi_valid, mean_matrix_expanded), axis=0)
 
         hsi1 = mm(torch.from_numpy(hsi_cube).unsqueeze(0)).squeeze().numpy()
         hsi_valid = np.transpose(hsi1)
