@@ -90,7 +90,7 @@ def get_1d_sincos_pos_embed_from_grid_torch(embed_dim, pos):
 # --------------------------------------------------------
 def interpolate_pos_embed(model, checkpoint_model):
     # 对所有位置编码进行调整，但是不用调整decoder
-    for layer in checkpoint_model:
+    for layer in checkpoint_model.keys():
         if 'pos_embed' in layer and 'decoder' not in layer:
             # TODO: check patch_embed.proj.weight  patch_embed.proj.bias head.weight head.bias 
             # 没有考虑   cls_embed    cls_token
@@ -104,8 +104,8 @@ def interpolate_pos_embed(model, checkpoint_model):
                 new_size = int( getattr(model, layer, None).shape[-2] ** 0.5)
                 # class_token and dist_token are kept unchanged
                 if orig_size != new_size:
-                    # TODO: 尺寸不同逻辑待开发
                     print("Spatial position interpolate from %dx%d to %dx%d" % (orig_size, orig_size, new_size, new_size))
+                    num_extra_tokens = 0
                     extra_tokens = pos_embed_checkpoint[:, :num_extra_tokens]
                     # only the position tokens are interpolated
                     pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
@@ -114,7 +114,7 @@ def interpolate_pos_embed(model, checkpoint_model):
                         pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False)
                     pos_tokens = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
                     new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
-                    checkpoint_model['pos_embed'] = new_pos_embed
+                    checkpoint_model[layer] = new_pos_embed
             elif 'temporal' in layer:
                 orig_size = int(pos_embed_checkpoint.shape[-2])
                 new_size = int(getattr(model, layer, None).shape[-2])
@@ -123,8 +123,8 @@ def interpolate_pos_embed(model, checkpoint_model):
                     pos_tokens = pos_embed_checkpoint.reshape(-1, orig_size, embedding_size).permute(0, 2, 1).unsqueeze(2)
                     pos_tokens = torch.nn.functional.interpolate(
                         pos_tokens, size=(1,new_size), mode='bicubic', align_corners=False)
-                    pos_tokens = pos_tokens.squeeze(2)
-                    setattr(model, layer, torch.nn.Parameter(pos_tokens))
+                    new_pos_embed = pos_tokens.squeeze(2).permute(0, 2, 1)
+                    checkpoint_model[layer] = new_pos_embed
             else:
                 # TODO： 其他场景
                 raise ValueError("Unknown layer name: {}".format(layer))

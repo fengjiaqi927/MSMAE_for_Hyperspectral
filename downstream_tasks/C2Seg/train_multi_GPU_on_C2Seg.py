@@ -20,8 +20,8 @@ from util.pos_embed import interpolate_pos_embed
 # os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
-def create_model(nb_classes, weight_path, num_frames, pretrain=False):
-    model = vit_base_patch8(num_classes=nb_classes, num_frames=num_frames)
+def create_model(nb_classes, weight_path, num_frames, img_size, pretrain=False):
+    model = vit_base_patch8(num_classes=nb_classes, img_size=img_size, num_frames=num_frames)
     # model = vit_large_patch8(num_classes=nb_classes)
 
     if pretrain:
@@ -65,6 +65,7 @@ def main(args):
     # num_classes = args.num_classes + 1
     pretrain_path = args.pretrain_path
     warmup_epochs = args.warmup_epochs
+    img_size = args.patch
     # 用来保存coco_info的文件
     # results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     # results_file = "vit_random.txt"
@@ -73,14 +74,15 @@ def main(args):
 
     data_root = args.data_path
     # check data root
-    train_data_loader, val_data_loader, test_data_loader, num_classes, band = C2Seg_dataset.getdata(
+    train_data_loader, val_data_loader, test_data_loader, num_classes, band, total_length, train_sampler = C2Seg_dataset.getdata(
         args.dataset,
         args.patch,  # 128*128图像尺寸
         args.overlay,
         args.batch_size,
         args.pca_flag,
         args.band_norm_flag,
-        args.aug_flag
+        args.aug_flag,
+        args.distributed
     )
 
     # train_dataset = SegDataset(args.data_path, txt_name="train.txt", training=True, data_name="BigEarthNet")
@@ -109,7 +111,7 @@ def main(args):
     print("Creating model")
     # create model num_classes equal background + foreground classes
     # model = create_model_Unet(num_classes=num_classes, weights=pretrain_path, pretrain=False)
-    model = create_model(nb_classes=num_classes, weight_path=pretrain_path, num_frames=band, pretrain=True)
+    model = create_model(nb_classes=num_classes, weight_path=pretrain_path, num_frames=band, img_size=img_size, pretrain=True)
     # model = create_model(nb_classes=13, weight_path='./src/checkpoint-150.pth', pretrain=True)
     model.to(device)
 
@@ -166,9 +168,9 @@ def main(args):
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
-        mean_loss, lr = train_one_epoch(model, optimizer, train_data_loader, device, epoch,
-                                        lr_scheduler=lr_scheduler, print_freq=args.print_freq, scaler=scaler)
-
+        mean_loss, lr = train_one_epoch(model, optimizer, train_data_loader, device, epoch, 
+                                        lr_scheduler=lr_scheduler, total_length=int(total_length/args.batch_size/1), print_freq=args.print_freq, scaler=scaler)
+        # gpu几这里填几
         confmat = evaluate(model, val_data_loader, device=device, num_classes=num_classes)
         val_info = str(confmat)
         print(val_info)
@@ -216,7 +218,7 @@ if __name__ == "__main__":
     # 训练设备类型
     parser.add_argument('--device', default='cuda', help='device')
     # 检测目标类别数(不包含背景)
-    parser.add_argument('--num-classes', default=12, type=int, help='num_classes')
+    parser.add_argument('--num-classes', default=13, type=int, help='num_classes')
     # 每块GPU上的batch_size
     parser.add_argument('-b', '--batch-size', default=32, type=int,
                         help='images per gpu, the total batch size is $NGPU x batch_size')
@@ -233,7 +235,7 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--workers', default=16, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
     # 训练学习率，这里默认设置成0.01(使用n块GPU建议乘以n)，如果效果不好可以尝试修改学习率
-    parser.add_argument('--lr', default=0.0001, type=float,
+    parser.add_argument('--lr', default=0.0001, type=float, #default=0.0001
                         help='initial learning rate')
     parser.add_argument('--wd', '--weight-decay', default=1e-5, type=float,
                         metavar='W', help='weight decay (default: 1e-4)',
@@ -243,7 +245,7 @@ if __name__ == "__main__":
     # 训练过程打印信息的频率
     parser.add_argument('--print-freq', default=50, type=int, help='print frequency')
     # 文件保存地址
-    parser.add_argument('--output-dir', default='./multi_train/', help='path where to save')
+    parser.add_argument('--output-dir', default='./multi_train/C2Seg/', help='path where to save')
     # 基于上次的训练结果接着训练
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     # 不训练，仅测试

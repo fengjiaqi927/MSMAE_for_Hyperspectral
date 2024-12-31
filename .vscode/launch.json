@@ -55,8 +55,14 @@
 
                 // C2Seg finetune
                 "--amp=True",
-                "-b=12",
-                "--pretrain-path=./experiments/pretrain_HySpecNet11k_without_pretrain/checkpoint-199.pth"
+                "-b=1",
+                "--patch=64",
+                "--test-only"
+                // "--pretrain-path=./experiments/pretrain_HySpecNet11k_without_pretrain/checkpoint-199.pth"
+
+                // Segmunich finetune
+                // "--amp=True",
+                // "-b=1"
             ]
         }
     ]

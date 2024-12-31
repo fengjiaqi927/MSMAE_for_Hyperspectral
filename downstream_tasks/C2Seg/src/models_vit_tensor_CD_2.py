@@ -172,7 +172,7 @@ class VisionTransformer(nn.Module):
         # --------------------------------------------------------------------------
 
         self.cls_seg = nn.Sequential(
-            nn.Conv2d(256, 13, kernel_size=3, padding=1),
+            nn.Conv2d(256, num_classes, kernel_size=3, padding=1),
         )
         # self.sm = nn.LogSoftmax(dim=1)
         # torch.nn.init.normal_(self.head.weight, std=0.02)
@@ -183,6 +183,7 @@ class VisionTransformer(nn.Module):
         # self.upernet = UPerNet(num_classes=2)
         self.decoder = FPNHEAD()
 
+        # 修改以适应不同维度的高光谱图像
         self.conv0 = nn.Sequential(
             nn.Conv2d(768, 512, 1, 1),
             nn.GroupNorm(32, 512),
@@ -215,8 +216,9 @@ class VisionTransformer(nn.Module):
             # 2048, 16, 16
         )
 
+        
         self.fc = nn.Sequential(
-            nn.Linear(4, 1))
+            nn.Linear(int(num_frames/t_patch_size), 1))
 
 
     def unpatchify(self, x):
@@ -306,7 +308,7 @@ class VisionTransformer(nn.Module):
         seg1 = seg1.view([N, T, L, C])
         seg1 = seg1.permute(0, 2, 3, 1)
         seg1 = self.fc(seg1)
-        seg1 = seg1.reshape(B, 16, 16, 768).permute(0, 3, 1, 2).contiguous()
+        seg1 = seg1.reshape(B, int(L**0.5), int(L**0.5), 768).permute(0, 3, 1, 2).contiguous().to(torch.float32) 
 
 
         m = {}
@@ -713,7 +715,7 @@ def vit_huge_patch14(**kwargs):
 def vit_base_patch8(**kwargs):
     # 从外部传入光谱维度信息
     model = VisionTransformer(
-        img_size=128,
+        # img_size=128,
         in_chans=1,
         patch_size=8,
         embed_dim=768,

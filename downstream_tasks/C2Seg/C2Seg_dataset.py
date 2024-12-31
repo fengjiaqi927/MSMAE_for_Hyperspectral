@@ -9,16 +9,28 @@ import h5py
 from sklearn.decomposition import PCA
 from imgaug import augmenters as iaa
 
+from torch.utils.data import Dataset
 
-def getdata(dataset, patch, overlay, batchsize, pac_flag=False, band_norm_flag=False, aug_flag=False):
-    label_train, label_valid, label_test, num_classes, band = slide_crop(dataset, patch, overlay, pac_flag,
+
+def getdata(dataset, patch, overlay, batchsize, pac_flag=False, band_norm_flag=False, aug_flag=False, distributed=False):
+    label_train, label_valid, label_test, num_classes, band, total_length = slide_crop(dataset, patch, overlay, pac_flag,
                                                                              band_norm_flag, aug_flag)
-    label_test_loader = Data.DataLoader(label_test, batch_size=1, shuffle=False, drop_last=False)
-    label_train_loader = Data.DataLoader(label_train, batch_size=batchsize, shuffle=True, num_workers=0,
+    print("Creating data loaders")
+    if distributed:
+        train_sampler = torch.utils.data.distributed.DistributedSampler(label_train)
+        valid_sampler = torch.utils.data.distributed.DistributedSampler(label_valid)
+        test_sampler = torch.utils.data.distributed.DistributedSampler(label_test)
+    else:
+        train_sampler = torch.utils.data.RandomSampler(label_train)
+        valid_sampler = torch.utils.data.SequentialSampler(label_valid)
+        test_sampler = torch.utils.data.SequentialSampler(label_test)
+
+    label_test_loader = Data.DataLoader(label_test, batch_size=1, sampler=test_sampler, shuffle=False, drop_last=False)
+    label_train_loader = Data.DataLoader(label_train, batch_size=batchsize, sampler=train_sampler, shuffle=False, num_workers=0,
                                          pin_memory=True, drop_last=True)
-    label_valid_loader = Data.DataLoader(label_test, batch_size=batchsize, shuffle=True, num_workers=0,
+    label_valid_loader = Data.DataLoader(label_valid, batch_size=batchsize, sampler=valid_sampler, shuffle=False, num_workers=0,
                                          pin_memory=True, drop_last=True)
-    return label_train_loader, label_valid_loader, label_test_loader, num_classes, band
+    return label_train_loader, label_valid_loader, label_test_loader, num_classes, band, total_length, train_sampler
 
 
 def normalization(data):
@@ -203,6 +215,8 @@ def read_data(dataset, pca_flag=False, band_norm=False):
     return hsi, msi, sar, label, hsi_valid, msi_valid, sar_valid, label_valid, num_classes, band
 
 
+
+
 def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, aug_flag=False):
     hsi, msi, sar, label, hsi_valid, msi_valid, sar_valid, label_valid, num_classes, band = read_data(dataset, pca_flag,
                                                                                                       band_norm_flag)
@@ -316,21 +330,24 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
     msi_list = torch.from_numpy(msi_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     sar_list = torch.from_numpy(sar_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     label_list = torch.from_numpy(label_list).type(torch.LongTensor)
-    label_train = Data.TensorDataset(hsi_list, msi_list, sar_list, label_list)
+    # label_train = Data.TensorDataset(hsi_list, msi_list, sar_list, label_list)
+    label_train = C2SegDataset(hsi_list, msi_list, sar_list, label_list)
 
     hsi_valid_list = torch.from_numpy(hsi_valid_list[:, :, :, :band].transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     msi_valid_list = torch.from_numpy(msi_valid_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     sar_valid_list = torch.from_numpy(sar_valid_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     label_valid_list = torch.from_numpy(label_valid_list).type(torch.LongTensor)
-    label_valid = Data.TensorDataset(hsi_valid_list, msi_valid_list, sar_valid_list, label_valid_list)
+    # label_valid = Data.TensorDataset(hsi_valid_list, msi_valid_list, sar_valid_list, label_valid_list)
+    label_valid = C2SegDataset(hsi_valid_list, msi_valid_list, sar_valid_list, label_valid_list)
 
     hsi_test_list = torch.from_numpy(hsi_test_list[:, :, :, :band].transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     msi_test_list = torch.from_numpy(msi_test_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     sar_test_list = torch.from_numpy(sar_test_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     label_test_list = torch.from_numpy(label_test_list).type(torch.LongTensor)
-    label_test = Data.TensorDataset(hsi_test_list, msi_test_list, sar_test_list, label_test_list)
+    # label_test = Data.TensorDataset(hsi_test_list, msi_test_list, sar_test_list, label_test_list)
+    label_test = C2SegDataset(hsi_test_list, msi_test_list, sar_test_list, label_test_list)
 
-    return label_train, label_valid, label_test, num_classes, band
+    return label_train, label_valid, label_test, num_classes, band, len(label_list)
 
 
 def slide_crop_all_modalities(dataset, patch, overlay):
@@ -388,3 +405,31 @@ def slide_crop_all_modalities(dataset, patch, overlay):
     label_valid = Data.TensorDataset(img_valid_list, label_valid_list)
 
     return label_train, label_valid, num_classes, band
+
+class C2SegDataset(Dataset):
+    def __init__(self, hsi_list, msi_list, sar_list, label_list):
+        super(C2SegDataset, self).__init__()
+        self.hsi_list = hsi_list
+        self.msi_list = msi_list
+        self.sar_list = sar_list
+        self.label_list = label_list
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is the image segmentation.
+        """
+        hsi = self.hsi_list[index]
+        msi = self.msi_list[index]
+        sar = self.sar_list[index]
+        label = self.label_list[index]
+
+        label[(label < 0) | (label > 13)] = 255
+
+        return hsi, label
+
+    def __len__(self):
+        return len(self.label_list)
