@@ -19,9 +19,8 @@ __pycache__/
 SegMunich/
 downstream_predict/
 multi_train/
-experiments/pretrain_BEN/
-experiments/pretrain_HySpecNet11k/
-experiments/pretrain_HySpecNet11k_without_pretrain/
+experiments/
+!experiments/*.log
 
 # 忽略压缩包和二进制文件
 *.zip

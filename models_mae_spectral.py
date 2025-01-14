@@ -17,6 +17,9 @@ import torch.nn as nn
 from util import video_vit
 from util.logging import master_print as print
 
+import numpy as np
+
+
 
 class MaskedAutoencoderViT(nn.Module):
     """Masked Autoencoder with VisionTransformer backbone"""
@@ -456,20 +459,31 @@ class MaskedAutoencoderViT(nn.Module):
         mask = mask.view(loss1.shape)
         loss1 = (loss1 * mask).sum() / mask.sum()
 
+        # target_spectral = torch.squeeze(_imgs, dim=1).reshape(N,C*T,H*W )
+        # pred_spectral = torch.squeeze(self.unpatchify(pred), dim=1).reshape(N,C*T,H*W )
+        target_spectral = torch.squeeze(_imgs, dim=1).reshape(N,C*T,H*W ).mean(dim=-1)
+        pred_spectral = torch.squeeze(self.unpatchify(pred), dim=1).reshape(N,C*T,H*W ).mean(dim=-1)
+        loss2 = (target_spectral - pred_spectral) ** 2
+        loss2 = loss2.mean(dim=-1)
+        mask2 = torch.ones([N, C*T], device=loss2.device)
+        loss2 = (loss2 * mask2).sum() / mask2.sum()
+
         loss3 = (pred_spatial - target_spatial) ** 2  # 2,4,192
         loss3 = loss3.mean(dim=-1)
         mask3 = torch.ones([N, h * w], device=loss3.device)
         loss3 = (loss3 * mask3).sum() / mask3.sum()
 
 
-        loss = loss1 + loss3  # mean loss on removed patches
+        loss = loss1 + loss2 + loss3  # mean loss on removed patches
         return loss
 
     def forward(self, imgs, mask_ratio=0.9):
         latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
         pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*3]
         loss = self.forward_loss(imgs, pred, mask)
-        return loss, pred, mask
+        
+        # return loss, pred, mask
+        return loss, imgs, self.unpatchify(pred)
 
 
 def mae_vit_base_patch8_96(**kwargs):
@@ -493,6 +507,7 @@ def mae_vit_base_patch8_96(**kwargs):
 
 def mae_vit_base_patch8_128(**kwargs):
     # 注释掉方便从外部传参
+
     model = MaskedAutoencoderViT(
         # img_size=128,
         in_chans=1,

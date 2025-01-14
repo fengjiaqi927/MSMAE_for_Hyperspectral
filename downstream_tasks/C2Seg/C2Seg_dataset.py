@@ -81,23 +81,23 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         # PCA
         if pca_flag:
             hsi_matrix = np.reshape(hsi, (hsi.shape[0] * hsi.shape[1], hsi.shape[2]))  # 2456*811 242
-            pca = PCA(n_components=10)
+            pca = PCA(n_components=72)
             pca.fit_transform(hsi_matrix)
             newspace = pca.components_
-            newspace = newspace.transpose()  # 242*10
-            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2456*811 10
+            newspace = newspace.transpose()  # 242*72
+            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2456*811 72
             hsi = np.reshape(hsi_matrix, (hsi.shape[0], hsi.shape[1], pca.n_components_))
 
             hsi_matrix = np.reshape(hsi_valid,
                                     (hsi_valid.shape[0] * hsi_valid.shape[1], hsi_valid.shape[2]))  # 2456*811 242
-            pca = PCA(n_components=10)
+            pca = PCA(n_components=72)
             pca.fit_transform(hsi_matrix)
             newspace = pca.components_
-            newspace = newspace.transpose()  # 242*10
-            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2456*811 10
+            newspace = newspace.transpose()  # 242*72
+            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2456*811 72
             hsi_valid = np.reshape(hsi_matrix, (hsi_valid.shape[0], hsi_valid.shape[1], pca.n_components_))
 
-            band = 10
+            band = 72
 
             del hsi_matrix
         else:
@@ -140,12 +140,13 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         if pca_flag:
             # applying PCA for HSI # hsi (116, 2903, 4492)
             hsi_matrix = np.reshape(np.transpose(hsi), (hsi.shape[1] * hsi.shape[2], hsi.shape[0]))  # 2903*4492 116
-            pca = PCA(n_components=10)
+            pca = PCA(n_components=72)
             pca.fit_transform(hsi_matrix)
             newspace = pca.components_
-            newspace = newspace.transpose()  # 116*10
-            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2903*4492 10
+            newspace = newspace.transpose()  # 116*72
+            hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2903*4492 72
             hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi.shape[2], hsi.shape[1], pca.n_components_)))
+            band = 72
             del hsi
         else:
             # 116+1
@@ -176,7 +177,7 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         if pca_flag:
             ## applying PCA for valid HSI
             hsi_matrix = np.reshape(np.transpose(hsi_valid), (hsi_valid.shape[1] * hsi_valid.shape[2], hsi_valid.shape[0]))
-            pca = PCA(n_components=10)
+            pca = PCA(n_components=72)
             pca.fit_transform(hsi_matrix)
             newspace = pca.components_
             newspace = newspace.transpose()
@@ -427,8 +428,7 @@ class C2SegDataset(Dataset):
         sar = self.sar_list[index]
         label = self.label_list[index]
 
-        label[(label < 0) | (label > 13)] = 255
-
+    
         return hsi, label
 
     def __len__(self):

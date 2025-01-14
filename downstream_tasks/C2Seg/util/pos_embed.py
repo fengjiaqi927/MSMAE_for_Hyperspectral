@@ -110,8 +110,9 @@ def interpolate_pos_embed(model, checkpoint_model):
                     # only the position tokens are interpolated
                     pos_tokens = pos_embed_checkpoint[:, num_extra_tokens:]
                     pos_tokens = pos_tokens.reshape(-1, orig_size, orig_size, embedding_size).permute(0, 3, 1, 2)
-                    pos_tokens = torch.nn.functional.interpolate(
-                        pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False)
+                    # pos_tokens = torch.nn.functional.interpolate(
+                    #     pos_tokens, size=(new_size, new_size), mode='bicubic', align_corners=False)
+                    pos_tokens = pos_tokens[:,:,:new_size,:new_size]
                     pos_tokens = pos_tokens.permute(0, 2, 3, 1).flatten(1, 2)
                     new_pos_embed = torch.cat((extra_tokens, pos_tokens), dim=1)
                     checkpoint_model[layer] = new_pos_embed

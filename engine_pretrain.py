@@ -12,6 +12,9 @@ import wandb
 import util.misc as misc
 import util.lr_sched as lr_sched
 
+import cv2
+import numpy as np
+
 
 def train_one_epoch(model: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -30,7 +33,7 @@ def train_one_epoch(model: torch.nn.Module,
 
     if log_writer is not None:
         print('log_dir: {}'.format(log_writer.log_dir))
-
+    
     for data_iter_step, (samples, _) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
 
         # we use a per iteration (instead of per epoch) lr scheduler
@@ -40,8 +43,46 @@ def train_one_epoch(model: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
 
         with torch.cuda.amp.autocast():
-            loss, _, _ = model(samples, mask_ratio=args.mask_ratio)
+            loss, imgs, pred = model(samples, mask_ratio=args.mask_ratio)
+            if data_iter_step % print_freq == 0:
 
+                img_rgb =  (np.transpose(imgs[0, [7,13,19], :, :].cpu().numpy(),(1, 2, 0))* 255).astype(np.uint8)
+                pred_rgb = (np.transpose(pred.squeeze(0)[0, [7,13,19], :, :].cpu().detach().numpy(),(1, 2, 0))* 255).astype(np.uint8)
+                
+                img_rgb = np.sqrt(img_rgb / 255.0) * 255.0
+                pred_rgb = np.sqrt(pred_rgb / 255.0) * 255.0
+                # cv2.imwrite(args.log_dir + '/vis/'+ '{}_{}_output_image_1.png'.format(epoch,data_iter_step), img[:,:,1].astype(np.uint8))
+                # cv2.imwrite(args.log_dir + '/vis/'+ '{}_{}_output_pred_1.png'.format(epoch,data_iter_step), pred[:,:,1].astype(np.uint8))
+                cv2.imwrite(args.log_dir + '/vis/'+ '{}_{}_output_image.png'.format(epoch,data_iter_step), img_rgb.astype(np.uint8))
+                cv2.imwrite(args.log_dir + '/vis/'+ '{}_{}_output_pred.png'.format(epoch,data_iter_step), pred_rgb.astype(np.uint8))
+                cv2.imwrite(args.log_dir + '/vis/'+ 'output_image.png'.format(epoch,data_iter_step), img_rgb.astype(np.uint8))
+                cv2.imwrite(args.log_dir + '/vis/'+ 'output_pred.png'.format(epoch,data_iter_step), pred_rgb.astype(np.uint8))
+                img_mean = imgs[0,:,:,:].reshape(-1, img_rgb.shape[0] * img_rgb.shape[1]).mean(dim=-1).cpu().numpy()
+                img_sample = imgs[0,:,:,:].reshape(-1, img_rgb.shape[0] * img_rgb.shape[1])[:,int(img_rgb.shape[0] * img_rgb.shape[1]/2)].cpu().numpy()
+                pred_mean = pred.squeeze(0)[0,:,:,:].reshape(-1, img_rgb.shape[0] * img_rgb.shape[1]).mean(dim=-1).cpu().detach().numpy()
+                pred_sample = pred.squeeze(0)[0,:,:,:].reshape(-1, img_rgb.shape[0] * img_rgb.shape[1])[:,int(img_rgb.shape[0] * img_rgb.shape[1]/2)].cpu().detach().numpy()
+                import matplotlib.pyplot as plt
+                plt.figure(figsize=(10, 6))
+                plt.plot(img_mean, label='img_mean', linewidth=2, linestyle='-', color='C0')
+                plt.plot(img_sample, label='img_sample', linewidth=2, linestyle='-', color='C1')
+                plt.plot(pred_mean, label='pred_mean', linewidth=2, linestyle='--', color='C0')
+                plt.plot(pred_sample, label='pred_sample', linewidth=2, linestyle='--', color='C1')
+                plt.title('Comparison of Four Similar Curves')
+                plt.xlabel('Index')
+                plt.ylabel('Value')
+                plt.legend()
+                plt.grid(True)
+                save_path = args.log_dir + '/vis/'+ '{}_{}_output_plt.png'.format(epoch,data_iter_step)
+                plt.savefig(save_path, dpi=100, bbox_inches='tight')
+                plt.savefig(args.log_dir + '/vis/'+ 'output_plt.png'.format(epoch,data_iter_step), dpi=100, bbox_inches='tight')
+                plt.close()
+
+
+
+
+
+
+            
         loss_value = loss.item()
 
         if not math.isfinite(loss_value):

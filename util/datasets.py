@@ -728,7 +728,7 @@ class BigEarthNetImageDataset(SatelliteDataset):
 
         # images = [torch.FloatTensor(rasterio.open(img_path).read()) for img_path in image_paths]
 
-        images = self.open_image('/home/ps/Documents/data/bigearthnet_cor/'+selection['image_path'])  # (h, w, c)
+        images = self.open_image('/dev1/fengjq/BigEarthNet-v1.0/'+selection['image_path'])  # (h, w, c)
         if self.masked_bands is not None:
             images[:, :, self.masked_bands] = np.array(self.mean)[self.masked_bands]
 

@@ -200,6 +200,16 @@ def main(args):
                                                 patch_size=args.patch_size,
                                                 in_chans=dataset_train.in_c,
                                                 norm_pix_loss=args.norm_pix_loss)
+    
+    if args.resume:
+        checkpoint = torch.load(args.resume, map_location='cpu')
+
+        print("Load pre-trained checkpoint from: %s" % args.resume)
+        checkpoint_model = checkpoint['model']
+        
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        print(msg)
+    
     if args.resume_different_size:
         checkpoint = torch.load(args.resume_different_size, map_location='cpu')
 
@@ -216,7 +226,7 @@ def main(args):
             if k in checkpoint['model'] and checkpoint['model'][k].shape != state_dict[k].shape:
                 print(f"Removing key {k} from pretrained checkpoint")
                 del checkpoint['model'][k]
-
+        
         # interpolate position embedding
         # interpolate_pos_embed(model, checkpoint['model'])
         msg = model.load_state_dict(checkpoint_model, strict=False)
@@ -277,6 +287,7 @@ def main(args):
                 log_writer=log_writer,
                 args=args
             )
+            
 
         if args.output_dir and (epoch % 1 == 0 or epoch + 1 == args.epochs):
             misc.save_model(
@@ -308,4 +319,6 @@ if __name__ == '__main__':
     args = args.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+        Path(args.output_dir + '/vis').mkdir(parents=True, exist_ok=True)
+    
     main(args)
