@@ -939,9 +939,33 @@ class HySpecNet11k(SatelliteDataset):
             img = img[keep_idxs, :, :]
 
         if self.transform:
-            img = self.transform(img)
+            img, mask_UM = self.transform(img)
+            return img, mask_UM
         return img, 'unlabeled'
+            
 
+class C2SegDataset(SatelliteDataset):
+    def __init__(self, hsi_list):
+        super(C2SegDataset, self).__init__()
+        # 读取数据并写入内存，方便后续进行重构训练
+        
+
+        self.hsi_list = hsi_list
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is the image segmentation.
+        """
+        hsi = self.hsi_list[index]
+        return hsi, 'unlabeled'
+
+    def __len__(self):
+        return len(self.hsi_list)
+          
 
 def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
     """
@@ -988,6 +1012,32 @@ def build_fmow_dataset(is_train: bool, args) -> SatelliteDataset:
         root_dir = '/dev1/fengjq/Downloads/hyspecnet-11k/'
         dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, saved_bands_num=[24,48])
         # dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, dropped_bands=[i for i in range(130)])
+    elif args.dataset_type == 'HySpecNet11k_UM':
+        split = 'train' if is_train else 'val'
+        root_dir = '/dev1/fengjq/Downloads/hyspecnet-11k/'
+        
+        from mask_transform import MaskTransform, RandomMaskingGenerator
+        class MaskTransform_my(MaskTransform):
+            def __init__(self, input_size, token_size, mask_ratio, mask_regular=False):
+                self.transform = transforms.Compose([
+                    transforms.RandomResizedCrop(input_size, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
+                    transforms.RandomHorizontalFlip(),
+                    transforms.RandomVerticalFlip()])# 添加垂直翻转
+
+                self.masked_position_generator = RandomMaskingGenerator(
+                    token_size, mask_ratio, mask_regular
+                )
+        
+        transform_train = MaskTransform_my(input_size=args.input_size, token_size=int(args.input_size), mask_ratio=0.75, mask_regular=True)
+        
+        dataset = HySpecNet11k(root_dir, transform = transform_train, mode='easy', split=split, saved_bands_num=[24,48])
+        # dataset = HySpecNet11k(root_dir, transform = None, mode='easy', split=split, dropped_bands=[i for i in range(130)])
+    
+    # 添加C2Seg数据集
+    elif args.dataset_type == 'C2Seg':
+        # 待处理
+        hsi_list = 0
+        dataset = C2SegDataset(hsi_list)
     else:
         raise ValueError(f"Invalid dataset type: {args.dataset_type}")
     print(dataset)

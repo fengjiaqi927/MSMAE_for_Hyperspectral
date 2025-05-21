@@ -9,7 +9,7 @@ import torch
 from src.models_vit_tensor_CD_2 import vit_base_patch8
 from src import UNet
 # from src.models_vit_group_channels_seg import vit_base_patch16
-from train_utils import train_one_epoch, evaluate, create_lr_scheduler, init_distributed_mode, save_on_master, mkdir, evaluate_without_bg
+from train_utils import train_one_epoch, evaluate, create_lr_scheduler, init_distributed_mode, save_on_master, mkdir
 import C2Seg_dataset 
 import transforms as T
 import argparse
@@ -44,13 +44,7 @@ def create_model(nb_classes, weight_path, num_frames, img_size, pretrain=False):
         # model.load_state_dict(checkpoint_model, strict=False)
         # print(model)
         msg = model.load_state_dict(checkpoint_model, strict=False)
-        # 冻结所有加载成功的参数
-        for name, param in model.named_parameters():
-            if name in checkpoint_model.keys():  # 如果参数名在 checkpoint 模型中
-                print("freeze {}".format(name))
-                param.requires_grad = False  # 冻结参数
         print(msg)
-
     return model
 
 def create_model_Unet(num_classes, weights, pretrain=False):
@@ -163,8 +157,7 @@ def main(args):
             scaler.load_state_dict(checkpoint["scaler"])
 
     if args.test_only:
-        # confmat = evaluate(model, val_data_loader, device=device, num_classes=num_classes)
-        confmat = evaluate_without_bg(model, test_data_loader, device=device, num_classes=num_classes, vis_path=args.output_dir + 'vis/', epoch=0)
+        confmat = evaluate(model, val_data_loader, device=device, num_classes=num_classes)
         val_info = str(confmat)
         print(val_info)
         return
@@ -178,19 +171,9 @@ def main(args):
         mean_loss, lr = train_one_epoch(model, optimizer, train_data_loader, device, epoch, 
                                         lr_scheduler=lr_scheduler, total_length=int(total_length/args.batch_size/1), print_freq=args.print_freq, scaler=scaler)
         # gpu几这里填几
-        if (epoch % 5 ==0) & (epoch % 10 != 0) :
-            print("test on train_data_loader")
-            # confmat = evaluate(model, train_data_loader, device=device, num_classes=num_classes)
-            confmat = evaluate_without_bg(model, train_data_loader, device=device, num_classes=num_classes, vis_path=args.output_dir + 'train_vis/', epoch=epoch)
-            val_info = str(confmat)
-            print(val_info)
-        
-        if epoch % 10 ==0:
-            print("test on test_data_loader")
-            # confmat = evaluate(model, test_data_loader, device=device, num_classes=num_classes)
-            confmat = evaluate_without_bg(model, test_data_loader, device=device, num_classes=num_classes, vis_path=args.output_dir + 'test_vis/', epoch=epoch)
-            val_info = str(confmat)
-            print(val_info)
+        confmat = evaluate(model, val_data_loader, device=device, num_classes=num_classes)
+        val_info = str(confmat)
+        print(val_info)
 
         # 只在主进程上进行写操作
         if args.rank in [-1, 0]:
@@ -297,10 +280,7 @@ if __name__ == "__main__":
     # 如果指定了保存文件地址，检查文件夹是否存在，若不存在，则创建
     if args.output_dir:
         mkdir(args.output_dir)
-    if (args.output_dir + 'train_vis/'):
-        mkdir(args.output_dir+ 'train_vis/')
-    if (args.output_dir + 'test_vis/'):
-        mkdir(args.output_dir+ 'test_vis/')
+
     main(args)
 
 

@@ -34,16 +34,21 @@ def train_one_epoch(model: torch.nn.Module,
     if log_writer is not None:
         print('log_dir: {}'.format(log_writer.log_dir))
     
-    for data_iter_step, (samples, _) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
+    for data_iter_step, (samples, mask_UM) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
 
         # we use a per iteration (instead of per epoch) lr scheduler
         if data_iter_step % accum_iter == 0:
             lr_sched.adjust_learning_rate(optimizer, data_iter_step / len(data_loader) + epoch, args)
 
         samples = samples.to(device, non_blocking=True)
-
+        if args.mask_UM_flag is not None:
+            mask_UM = mask_UM.to(device, non_blocking=True).flatten(1).to(torch.bool)
+        else:
+            mask_UM = None
         with torch.cuda.amp.autocast():
-            loss, imgs, pred = model(samples, mask_ratio=args.mask_ratio)
+            if args.mask_UM_flag is not None:
+                args.mask_ratio = round(float(1-(1-args.mask_ratio)/(1-0.75)),2) # (1-0.75) UM * (1-0.6) RM = (1-0.9) mask
+            loss, imgs, pred, loss_list = model(samples, mask_ratio=args.mask_ratio, mask_UM=mask_UM)
             if data_iter_step % print_freq == 0:
 
                 img_rgb =  (np.transpose(imgs[0, [7,13,19], :, :].cpu().numpy(),(1, 2, 0))* 255).astype(np.uint8)
@@ -62,6 +67,7 @@ def train_one_epoch(model: torch.nn.Module,
                 pred_mean = pred.squeeze(0)[0,:,:,:].reshape(-1, img_rgb.shape[0] * img_rgb.shape[1]).mean(dim=-1).cpu().detach().numpy()
                 pred_sample = pred.squeeze(0)[0,:,:,:].reshape(-1, img_rgb.shape[0] * img_rgb.shape[1])[:,int(img_rgb.shape[0] * img_rgb.shape[1]/2)].cpu().detach().numpy()
                 import matplotlib.pyplot as plt
+                plt.switch_backend('agg')
                 plt.figure(figsize=(10, 6))
                 plt.plot(img_mean, label='img_mean', linewidth=2, linestyle='-', color='C0')
                 plt.plot(img_sample, label='img_sample', linewidth=2, linestyle='-', color='C1')
@@ -84,6 +90,7 @@ def train_one_epoch(model: torch.nn.Module,
 
             
         loss_value = loss.item()
+        loss_list_item = [round(i.item(), 2) for i in loss_list]
 
         if not math.isfinite(loss_value):
             print("Loss is {}, stopping training".format(loss_value))
@@ -99,6 +106,9 @@ def train_one_epoch(model: torch.nn.Module,
         torch.cuda.synchronize()
 
         metric_logger.update(loss=loss_value)
+        metric_logger.update(loss_1=loss_list_item[0])
+        metric_logger.update(loss_2=loss_list_item[1])
+        metric_logger.update(loss_3=loss_list_item[2])
 
         lr = optimizer.param_groups[0]["lr"]
         metric_logger.update(lr=lr)

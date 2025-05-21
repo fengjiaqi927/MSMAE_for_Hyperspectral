@@ -68,6 +68,7 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         sar = input_data['SAR']
         sar = sar.astype(np.float32)
         label = input_data['label']
+        
 
         hsi_valid = valid_data['HSI'][:, :, 0:band]  # 2456 811 242
         hsi_valid = hsi_valid.astype(np.float32)
@@ -76,6 +77,21 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         sar_valid = valid_data['SAR']
         sar_valid = sar_valid.astype(np.float32)
         label_valid = valid_data['label']
+
+        # 存高光谱图像为tiff
+        print(1)
+        import tifffile as tiff
+        normalized_hsi = np.clip(hsi, 0, 65535).astype(np.uint16)
+        metadata = {
+            'Description': 'HSI data with 242 channels',  # Custom header or description
+            'Channels': 242,
+            'Height': hsi.shape[0],
+            'Width': hsi.shape[1],
+            'Data type': 'uint16',
+        }
+        tiff.imwrite("output_image.tiff", normalized_hsi, description=metadata['Description'], metadata=metadata)
+        
+
 
         # a = np.min(label_valid)
         # PCA
@@ -90,10 +106,11 @@ def read_data(dataset, pca_flag=False, band_norm=False):
 
             hsi_matrix = np.reshape(hsi_valid,
                                     (hsi_valid.shape[0] * hsi_valid.shape[1], hsi_valid.shape[2]))  # 2456*811 242
-            pca = PCA(n_components=72)
-            pca.fit_transform(hsi_matrix)
-            newspace = pca.components_
-            newspace = newspace.transpose()  # 242*72
+            # 采用相同的映射方法，避免训练集和验证集空间不同
+            # pca = PCA(n_components=72)
+            # pca.fit_transform(hsi_matrix)
+            # newspace = pca.components_
+            # newspace = newspace.transpose()  # 242*72
             hsi_matrix = np.matmul(hsi_matrix, newspace)  # 2456*811 72
             hsi_valid = np.reshape(hsi_matrix, (hsi_valid.shape[0], hsi_valid.shape[1], pca.n_components_))
 
@@ -177,10 +194,11 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         if pca_flag:
             ## applying PCA for valid HSI
             hsi_matrix = np.reshape(np.transpose(hsi_valid), (hsi_valid.shape[1] * hsi_valid.shape[2], hsi_valid.shape[0]))
-            pca = PCA(n_components=72)
-            pca.fit_transform(hsi_matrix)
-            newspace = pca.components_
-            newspace = newspace.transpose()
+            # 采用相同的映射方法，避免训练集和验证集空间不同
+            # pca = PCA(n_components=72)
+            # pca.fit_transform(hsi_matrix)
+            # newspace = pca.components_
+            # newspace = newspace.transpose()
             hsi_matrix = np.matmul(hsi_matrix, newspace)
             hsi_cube = np.transpose(np.reshape(hsi_matrix, (hsi_valid.shape[2], hsi_valid.shape[1], pca.n_components_)))
             del hsi_valid
@@ -245,6 +263,18 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
     msi_list = []
     sar_list = []
     label_list = []
+    id_list = []
+    color_dic = {
+        0: "#000000", 1: '#00FFFF', 2: '#FFFFFF', 3: '#FF0000', 4: '#DDA0DD',
+        5: '#9400D3', 6: '#FF00FF', 7: '#FFFF00', 8: '#CD853F', 9: '#BDB76B',
+        10: '#00FF00', 11: '#9ACD32', 12: '#8B4513', 13: '#483D8B'
+    }
+    # 将十六进制颜色转换为BGR格式
+    def hex_to_bgr(hex_color):
+        hex_color = hex_color.lstrip('#')
+        rgb = [int(hex_color[i:i+2], 16) for i in (0, 2, 4)]
+        return (rgb[2], rgb[1], rgb[0])  # OpenCV uses BGR format
+
     for window in window_set_train:
         subset_hsi = hsi[window.indices()]
         subset_msi = msi[window.indices()]
@@ -266,11 +296,35 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
         msi_list.append(subset_msi)
         sar_list.append(subset_sar)
         label_list.append(subset_label)
+        id_list.append(str(window.x)+'_'+str(window.y))
+        # # # 保存图像：
+        # import cv2
+        # root_dir = '/dev1/fengjq/IEEE_TPAMI_SpectralGPT/multi_train/C2Seg/20250509_new_vis_test/'
+        # msi_name = dataset + '/msi/'+ 'train_img_' + str(window.x) + '_'  + str(window.y) + '.png'
+        # label_name = dataset + '/label/' + 'train_gt_' + str(window.x) + '_'  + str(window.y) + '.png'
+        # msi_rgb = np.clip(np.sqrt(subset_msi[:,:,:3]) * 255, 0, 255).astype(np.uint8)
+        # # 如果目录不存在则创建
+        # dir_path = os.path.dirname(root_dir+msi_name)
+        # os.makedirs(dir_path, exist_ok=True)
+        # cv2.imwrite(root_dir+msi_name, msi_rgb)
+        # # 创建一个空的 RGB 图像（高度 x 宽度 x 3）
+        # height, width = subset_label.shape
+        # label_rgb = np.zeros((height, width, 3), dtype=np.uint8)
+        # # 根据 color_dic 填充图像
+        # for _label, color in color_dic.items():
+        #     bgr_color = hex_to_bgr(color)
+        #     label_rgb[subset_label == _label] = bgr_color  
+        # # 如果目录不存在则创建
+        # dir_path = os.path.dirname(root_dir+label_name)
+        # os.makedirs(dir_path, exist_ok=True)
+        # cv2.imwrite(root_dir+label_name, label_rgb)
+
     del hsi, msi, sar, label
     hsi_list = np.array(hsi_list)
     msi_list = np.array(msi_list)
     sar_list = np.array(sar_list)
     label_list = np.array(label_list)
+    id_list = np.array(id_list)
     # has_zero = np.any(label_list==0)
     # print(has_zero)
 
@@ -280,6 +334,7 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
     msi_valid_list = []
     sar_valid_list = []
     label_valid_list = []
+    id_valid_list = []
     for window in window_set_valid:
         subset_hsi = hsi_valid[window.indices()]
         subset_msi = msi_valid[window.indices()]
@@ -300,10 +355,13 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
         msi_valid_list.append(subset_msi)
         sar_valid_list.append(subset_sar)
         label_valid_list.append(subset_label)
+        id_valid_list.append(str(window.x)+'_'+str(window.y))
+ 
     hsi_valid_list = np.array(hsi_valid_list)
     msi_valid_list = np.array(msi_valid_list)
     sar_valid_list = np.array(sar_valid_list)
     label_valid_list = np.array(label_valid_list)
+    id_valid_list =  np.array(id_valid_list)
 
     # non-overlay crop for valid data
     window_set_test = sw.generate(hsi_valid, sw.DimOrder.HeightWidthChannel, patch, 0)
@@ -311,6 +369,7 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
     msi_test_list = []
     sar_test_list = []
     label_test_list = []
+    id_test_list = []
     for window in window_set_test:
         subset_hsi = hsi_valid[window.indices()]
         subset_msi = msi_valid[window.indices()]
@@ -320,11 +379,30 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
         msi_test_list.append(subset_msi)
         sar_test_list.append(subset_sar)
         label_test_list.append(subset_label)
+        id_test_list.append(str(window.x)+'_'+str(window.y))
+        # # 保存图像：
+        # import cv2
+        # root_dir = '/dev1/fengjq/dataset/crosscity_data/vis/'
+        # dataset_test = 'berlin' if dataset == 'augsburg' else 'wuhan'
+        # msi_name = dataset_test + '/msi/'+ 'train_img_' + str(window.x) + '_'  + str(window.y) + '.png'
+        # label_name = dataset_test + '/label/' + 'train_gt_' + str(window.x) + '_'  + str(window.y) + '.png'
+        # msi_rgb = np.clip(np.sqrt(subset_msi[:,:,:3]) * 255, 0, 255).astype(np.uint8)
+        # cv2.imwrite(root_dir+msi_name, msi_rgb)
+        # # 创建一个空的 RGB 图像（高度 x 宽度 x 3）
+        # height, width = subset_label.shape
+        # label_rgb = np.zeros((height, width, 3), dtype=np.uint8)
+        # # 根据 color_dic 填充图像
+        # for _label, color in color_dic.items():
+        #     bgr_color = hex_to_bgr(color)
+        #     label_rgb[subset_label == _label] = bgr_color  
+        # cv2.imwrite(root_dir+label_name, label_rgb)
+
     del hsi_valid, msi_valid, sar_valid, label_valid
     hsi_test_list = np.array(hsi_test_list)
     msi_test_list = np.array(msi_test_list)
     sar_test_list = np.array(sar_test_list)
     label_test_list = np.array(label_test_list)
+    id_test_list = np.array(id_test_list)
 
     # construct dataset
     hsi_list = torch.from_numpy(hsi_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
@@ -332,21 +410,21 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
     sar_list = torch.from_numpy(sar_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     label_list = torch.from_numpy(label_list).type(torch.LongTensor)
     # label_train = Data.TensorDataset(hsi_list, msi_list, sar_list, label_list)
-    label_train = C2SegDataset(hsi_list, msi_list, sar_list, label_list)
+    label_train = C2SegDataset(hsi_list, msi_list, sar_list, label_list, id_list)
 
     hsi_valid_list = torch.from_numpy(hsi_valid_list[:, :, :, :band].transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     msi_valid_list = torch.from_numpy(msi_valid_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     sar_valid_list = torch.from_numpy(sar_valid_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     label_valid_list = torch.from_numpy(label_valid_list).type(torch.LongTensor)
     # label_valid = Data.TensorDataset(hsi_valid_list, msi_valid_list, sar_valid_list, label_valid_list)
-    label_valid = C2SegDataset(hsi_valid_list, msi_valid_list, sar_valid_list, label_valid_list)
+    label_valid = C2SegDataset(hsi_valid_list, msi_valid_list, sar_valid_list, label_valid_list, id_valid_list)
 
     hsi_test_list = torch.from_numpy(hsi_test_list[:, :, :, :band].transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     msi_test_list = torch.from_numpy(msi_test_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     sar_test_list = torch.from_numpy(sar_test_list.transpose(0, 3, 1, 2)).type(torch.FloatTensor)
     label_test_list = torch.from_numpy(label_test_list).type(torch.LongTensor)
     # label_test = Data.TensorDataset(hsi_test_list, msi_test_list, sar_test_list, label_test_list)
-    label_test = C2SegDataset(hsi_test_list, msi_test_list, sar_test_list, label_test_list)
+    label_test = C2SegDataset(hsi_test_list, msi_test_list, sar_test_list, label_test_list, id_test_list)
 
     return label_train, label_valid, label_test, num_classes, band, len(label_list)
 
@@ -408,12 +486,13 @@ def slide_crop_all_modalities(dataset, patch, overlay):
     return label_train, label_valid, num_classes, band
 
 class C2SegDataset(Dataset):
-    def __init__(self, hsi_list, msi_list, sar_list, label_list):
+    def __init__(self, hsi_list, msi_list, sar_list, label_list, id_list=None):
         super(C2SegDataset, self).__init__()
         self.hsi_list = hsi_list
         self.msi_list = msi_list
         self.sar_list = sar_list
         self.label_list = label_list
+        self.id_list = id_list
 
     def __getitem__(self, index):
         """
@@ -427,7 +506,8 @@ class C2SegDataset(Dataset):
         msi = self.msi_list[index]
         sar = self.sar_list[index]
         label = self.label_list[index]
-
+        if self.id_list is not None:
+            return hsi, label, self.id_list[index]
     
         return hsi, label
 

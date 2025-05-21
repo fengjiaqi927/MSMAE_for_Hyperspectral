@@ -9,6 +9,7 @@ __pycache__/
 
 # 忽略日志文件
 *.log
+results_augsburg.txt
 
 # 忽略临时文件
 *.tmp
@@ -20,7 +21,7 @@ SegMunich/
 downstream_predict/
 multi_train/
 experiments/
-!experiments/*.log
+wandb/
 
 # 忽略压缩包和二进制文件
 *.zip
@@ -30,3 +31,7 @@ experiments/
 
 # 忽略 Git 历史相关文件
 *.orig
+
+# 忽略 tiff 文件
+output_image.tiff
+*.tiff
