@@ -11,7 +11,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "env": {"CUDA_VISIBLE_DEVICES":"0"},
+            "env": {"CUDA_VISIBLE_DEVICES":"4"},
             "justMyCode": false,
             "args": [
 
@@ -81,7 +81,7 @@
 
 
                 // 2025 pretrian
-                "--batch_size=1",
+                "--batch_size=16",
                 "--accum_iter=32",
                 "--blr=0.00001",
                 "--epochs=200",
@@ -94,7 +94,7 @@
                 "--dataset_type=HySpecNet11k_UM",
                 "--model=mae_vit_base_patch8_128",
                 "--train_path=./txt_file/hyspecnet-11k_pretrain.csv",
-                "--resume_different_size=./SegMunich/SpectralGPT+.pth",
+                "--resume_different_size=./SpectralGPT+.pth",
                 "--epochs=200",
                 "--output_dir=./experiments/my_project",
                 "--log_dir=./experiments/my_project"

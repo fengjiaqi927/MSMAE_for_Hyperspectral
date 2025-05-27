@@ -24,6 +24,7 @@ class PatchEmbed(nn.Module):
         # temporal related:
         frames=32,
         t_patch_size=4,
+        mask_UM_flag=None,
     ):
         super().__init__()
         img_size = to_2tuple(img_size)
@@ -60,6 +61,8 @@ class PatchEmbed(nn.Module):
         self.proj = nn.Conv3d(
             in_chans, embed_dim, kernel_size=kernel_size, stride=kernel_size
         )
+
+        self.mask_UM_flag = mask_UM_flag
 
     def forward(self, x):
 

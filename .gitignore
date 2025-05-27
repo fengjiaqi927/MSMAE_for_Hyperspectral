@@ -35,3 +35,6 @@ wandb/
 # 忽略 tiff 文件
 output_image.tiff
 *.tiff
+
+# 忽略pth
+*.pth 

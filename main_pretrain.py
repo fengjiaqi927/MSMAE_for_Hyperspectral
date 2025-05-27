@@ -144,7 +144,10 @@ def main(args):
     torch.manual_seed(seed)
     np.random.seed(seed)
 
-    cudnn.benchmark = True
+    cudnn.benchmark = True 
+    # F.conv2d(input, weight, bias, self.stride, RuntimeError: cuDNN error: CUDNN_STATUS_MAPPING_ERROR
+    # cudnn.benchmark = False
+    # torch.backends.cudnn.enabled = False
 
     dataset_train = build_fmow_dataset(is_train=True, args=args)
     print(dataset_train)
@@ -192,7 +195,8 @@ def main(args):
                                                                mask_UM_flag=args.mask_UM_flag
                                                                )
     elif args.model_type == 'tensor':
-        model = models_mae_spectral.__dict__[args.model](
+        import models_mae_spectral_my
+        model = models_mae_spectral_my.__dict__[args.model](
             img_size=args.input_size,
             patch_size=args.patch_size,
             num_frames=dataset_train.in_c,
@@ -200,6 +204,16 @@ def main(args):
             mask_ratio=args.mask_ratio,
             mask_UM_flag=args.mask_UM_flag
         )
+
+        # 原等价模型
+        # model = models_mae_spectral.__dict__[args.model](
+        #     img_size=args.input_size,
+        #     patch_size=args.patch_size,
+        #     num_frames=dataset_train.in_c,
+        #     pred_t_dim=dataset_train.in_c,
+        #     mask_ratio=args.mask_ratio,
+        #     mask_UM_flag=args.mask_UM_flag
+        # )
     else:
         model = models_mae.__dict__[args.model](img_size=args.input_size,
                                                 patch_size=args.patch_size,

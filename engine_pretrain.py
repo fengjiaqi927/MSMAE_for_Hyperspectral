@@ -47,12 +47,12 @@ def train_one_epoch(model: torch.nn.Module,
             mask_UM = None
         with torch.cuda.amp.autocast():
             if args.mask_UM_flag is not None:
-                args.mask_ratio = round(float(1-(1-args.mask_ratio)/(1-0.75)),2) # (1-0.75) UM * (1-0.6) RM = (1-0.9) mask
-            loss, imgs, pred, loss_list = model(samples, mask_ratio=args.mask_ratio, mask_UM=mask_UM)
+                temp_mask_ratio = round(float(1-(1-args.mask_ratio)/(1-0.75)),2) # (1-0.75) UM * (1-0.6) RM = (1-0.9) mask
+            loss, imgs, pred, loss_list = model(samples, mask_ratio=temp_mask_ratio, mask_UM=mask_UM)
             if data_iter_step % print_freq == 0:
 
                 img_rgb =  (np.transpose(imgs[0, [7,13,19], :, :].cpu().numpy(),(1, 2, 0))* 255).astype(np.uint8)
-                pred_rgb = (np.transpose(pred.squeeze(0)[0, [7,13,19], :, :].cpu().detach().numpy(),(1, 2, 0))* 255).astype(np.uint8)
+                pred_rgb = (np.transpose(pred.squeeze(1)[0, [7,13,19], :, :].cpu().detach().numpy(),(1, 2, 0))* 255).astype(np.uint8)
                 
                 img_rgb = np.sqrt(img_rgb / 255.0) * 255.0
                 pred_rgb = np.sqrt(pred_rgb / 255.0) * 255.0
