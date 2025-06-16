@@ -11,8 +11,11 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "env": {"CUDA_VISIBLE_DEVICES":"4"},
+            "env": {
+                "CUDA_VISIBLE_DEVICES":"4",
+                "PYTHONPATH": "${workspaceFolder}",},
             "justMyCode": false,
+            "cwd": "${workspaceFolder}/UM-MAE",
             "args": [
 
                 // bigearthnet_pretrain
@@ -81,23 +84,23 @@
 
 
                 // 2025 pretrian
-                "--batch_size=16",
-                "--accum_iter=32",
-                "--blr=0.00001",
-                "--epochs=200",
-                "--warmup_epochs=20",
-                "--num_workers=8",
-                "--input_size=128",
-                "--patch_size=8",
-                "--mask_ratio=0.90",
-                "--model_type=tensor",
-                "--dataset_type=HySpecNet11k_UM",
-                "--model=mae_vit_base_patch8_128",
-                "--train_path=./txt_file/hyspecnet-11k_pretrain.csv",
-                "--resume_different_size=./SpectralGPT+.pth",
-                "--epochs=200",
-                "--output_dir=./experiments/my_project",
-                "--log_dir=./experiments/my_project"
+                // "--batch_size=16",
+                // "--accum_iter=32",
+                // "--blr=0.00001",
+                // "--epochs=200",
+                // "--warmup_epochs=20",
+                // "--num_workers=8",
+                // "--input_size=128",
+                // "--patch_size=8",
+                // "--mask_ratio=0.90",
+                // "--model_type=tensor",
+                // "--dataset_type=HySpecNet11k_UM",
+                // "--model=mae_vit_base_patch8_128",
+                // "--train_path=./txt_file/hyspecnet-11k_pretrain.csv",
+                // "--resume_different_size=./SpectralGPT+.pth",
+                // "--epochs=200",
+                // "--output_dir=./experiments/my_project",
+                // "--log_dir=./experiments/my_project"
             
                 // 2025 finetune
                 // "--amp=True",
@@ -109,7 +112,25 @@
                 // "--output-dir=./multi_train/C2Seg/20250509_new_vis_test"
 
 
-
+                // 2025 pretrian swin
+                "--batch_size=1",
+                "--accum_iter=4",
+                // "--model=mae_swin_tiny_128",
+                "--model=mae_swin_large_128",
+                "--mask_regular",
+                "--vis_mask_ratio=0.25",
+                "--input_size=128",
+                "--token_size=32",
+                "--norm_pix_loss",
+                "--mask_ratio=0.75",
+                "--epochs=200",
+                "--warmup_epochs=10",
+                "--blr=1.5e-4",
+                "--weight_decay=0.05",
+                "--log_dir=./work_dirs/pretrain_mae_swin_large_128_mask_vmr025_200e",
+                "--output_dir=./work_dirs/pretrain_mae_swin_large_128_mask_vmr025_200e",
+                // "--resume_different_size=/home/fengjq/5grade/MSMAE_for_Hyperspectral/UM-MAE/work_dirs/checkpoint-99-model.pth"
+                "--resume_different_size=/home/fengjq/5grade/MSMAE_for_Hyperspectral/UM-MAE/work_dirs/checkpoint.pth"
             ]
         }
     ]

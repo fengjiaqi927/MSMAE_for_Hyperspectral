@@ -21,6 +21,7 @@ import skimage.io as io
 import csv
 import random
 
+
 log = logging.getLogger()
 log.setLevel(logging.ERROR)
 

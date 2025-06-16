@@ -22,6 +22,8 @@ downstream_predict/
 multi_train/
 experiments/
 wandb/
+work_dirs/
+UM-MAE/
 
 # 忽略压缩包和二进制文件
 *.zip
@@ -38,3 +40,4 @@ output_image.tiff
 
 # 忽略pth
 *.pth 
+
