@@ -108,29 +108,41 @@
                 // "--patch=64",
                 // // "--test-only",
                 // "--pca_flag=True",
-                // "--pretrain-path=/dev1/fengjq/IEEE_TPAMI_SpectralGPT/experiments/pretrain_HySpecNet11k_vis_spectral_loss_cos_sum_0.9_0.0002_0.01/checkpoint-180.pth",
+                // "--pretrain-path=/home/fengjq/5grade/MSMAE_for_Hyperspectral/experiments/pretrain_HySpecNet11k_vis_spectral_loss_cos_sum_0.9_0.0002_0.01/checkpoint-180.pth",
                 // "--output-dir=./multi_train/C2Seg/20250509_new_vis_test"
 
 
-                // 2025 pretrian swin
-                "--batch_size=1",
-                "--accum_iter=4",
+                // // 2025 pretrian swin
+                // "--batch_size=1",
+                // "--accum_iter=4",
                 // "--model=mae_swin_tiny_128",
-                "--model=mae_swin_large_128",
-                "--mask_regular",
-                "--vis_mask_ratio=0.25",
-                "--input_size=128",
-                "--token_size=32",
-                "--norm_pix_loss",
-                "--mask_ratio=0.75",
-                "--epochs=200",
-                "--warmup_epochs=10",
-                "--blr=1.5e-4",
-                "--weight_decay=0.05",
-                "--log_dir=./work_dirs/pretrain_mae_swin_large_128_mask_vmr025_200e",
-                "--output_dir=./work_dirs/pretrain_mae_swin_large_128_mask_vmr025_200e",
+                // // "--model=mae_swin_large_128",
+                // "--mask_regular",
+                // "--vis_mask_ratio=0.25",
+                // "--input_size=128",
+                // "--token_size=32",
+                // "--norm_pix_loss",
+                // "--mask_ratio=0.75",
+                // "--epochs=200",
+                // "--warmup_epochs=10",
+                // "--blr=1.5e-4",
+                // "--weight_decay=0.05",
+                // "--log_dir=./work_dirs/pretrain_mae_swin_tiny_128_mask_vmr025_200e",
+                // "--output_dir=./work_dirs/pretrain_mae_swin_tiny_128_mask_vmr025_200e",
                 // "--resume_different_size=/home/fengjq/5grade/MSMAE_for_Hyperspectral/UM-MAE/work_dirs/checkpoint-99-model.pth"
-                "--resume_different_size=/home/fengjq/5grade/MSMAE_for_Hyperspectral/UM-MAE/work_dirs/checkpoint.pth"
+                // // "--log_dir=./work_dirs/pretrain_mae_swin_large_128_mask_vmr025_200e",
+                // // "--output_dir=./work_dirs/pretrain_mae_swin_large_128_mask_vmr025_200e",
+                // // "--resume_different_size=/home/fengjq/5grade/MSMAE_for_Hyperspectral/UM-MAE/work_dirs/checkpoint.pth"
+
+
+                // // 2025 finetune swin
+                "--amp=True",
+                "-b=1",
+                "--patch=64",
+                // "--test-only",
+                "--pca_flag=True",
+                "--pretrain-path=/home/fengjq/5grade/MSMAE_for_Hyperspectral/work_dirs/pretrain_mae_swin_tiny_128_mask_vmr025_200e/checkpoint-199.pth",
+                "--output-dir=./multi_train/C2Seg/20250616_swin_tiny"
             ]
         }
     ]

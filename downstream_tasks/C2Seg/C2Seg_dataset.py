@@ -54,9 +54,9 @@ def band_normalization(data):
 def read_data(dataset, pca_flag=False, band_norm=False):
     if dataset == 'augsburg':
         num_classes, band = 14, 242
-        train_file = r'/dev1/fengjq/dataset/crosscity_data/data/data1/augsburg_multimodal.mat'
+        train_file = r'/home/fengjq/5grade/seg/crosscity_data/data/data1/augsburg_multimodal.mat'
         col_train, row_train = 1360, 886
-        valid_file = r'/dev1/fengjq/dataset/crosscity_data/data/data1/berlin_multimodal.mat'
+        valid_file = r'/home/fengjq/5grade/seg/crosscity_data/data/data1/berlin_multimodal.mat'
         col_valid, row_valid = 811, 2465
         input_data = sio.loadmat(train_file)
         valid_data = sio.loadmat(valid_file)
@@ -132,11 +132,11 @@ def read_data(dataset, pca_flag=False, band_norm=False):
         num_classes = 14
         band = 10  # 116
         ## beijing is training, wuhan is testing
-        train_file = r'/dev1/fengjq/dataset/crosscity_data/data/data2/beijing.mat'
-        train_file_label = r'/dev1/fengjq/dataset/crosscity_data/data/data2/beijing_label.mat'
+        train_file = r'/home/fengjq/5grade/seg/crosscity_data/data/data2/beijing.mat'
+        train_file_label = r'/home/fengjq/5grade/seg/crosscity_data/data/data2/beijing_label.mat'
         col_train, row_train = 13474, 8706
-        valid_file = r'/dev1/fengjq/dataset/crosscity_data/data/data2/wuhan.mat'
-        valid_file_label = r'/dev1/fengjq/dataset/crosscity_data/data/data2/wuhan_label.mat'
+        valid_file = r'/home/fengjq/5grade/seg/crosscity_data/data/data2/wuhan.mat'
+        valid_file_label = r'/home/fengjq/5grade/seg/crosscity_data/data/data2/wuhan_label.mat'
         col_valid, row_valid = 6225, 8670
 
         with h5py.File(train_file, 'r') as f:
@@ -382,7 +382,7 @@ def slide_crop(dataset, patch, overlay, pca_flag=False, band_norm_flag=False, au
         id_test_list.append(str(window.x)+'_'+str(window.y))
         # # 保存图像：
         # import cv2
-        # root_dir = '/dev1/fengjq/dataset/crosscity_data/vis/'
+        # root_dir = '/home/fengjq/5grade/seg/crosscity_data/vis/'
         # dataset_test = 'berlin' if dataset == 'augsburg' else 'wuhan'
         # msi_name = dataset_test + '/msi/'+ 'train_img_' + str(window.x) + '_'  + str(window.y) + '.png'
         # label_name = dataset_test + '/label/' + 'train_gt_' + str(window.x) + '_'  + str(window.y) + '.png'

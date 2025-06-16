@@ -6,7 +6,8 @@ import datetime
 import torch
 
 
-from src.models_vit_tensor_CD_2 import vit_base_patch8
+# from src.models_vit_tensor_CD_2 import vit_base_patch8
+from src.swin_transformer_seg import swin_tiny_patch4
 from src import UNet
 # from src.models_vit_group_channels_seg import vit_base_patch16
 from train_utils import train_one_epoch, evaluate, create_lr_scheduler, init_distributed_mode, save_on_master, mkdir, evaluate_without_bg
@@ -21,7 +22,7 @@ from util.pos_embed import interpolate_pos_embed
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 def create_model(nb_classes, weight_path, num_frames, img_size, pretrain=False):
-    model = vit_base_patch8(num_classes=nb_classes, img_size=img_size, num_frames=num_frames)
+    model = swin_tiny_patch4(num_classes=nb_classes, img_size=img_size)
     # model = vit_large_patch8(num_classes=nb_classes)
 
     if pretrain:
@@ -113,6 +114,8 @@ def main(args):
     # create model num_classes equal background + foreground classes
     # model = create_model_Unet(num_classes=num_classes, weights=pretrain_path, pretrain=False)
     model = create_model(nb_classes=num_classes, weight_path=pretrain_path, num_frames=band, img_size=img_size, pretrain=True)
+    
+    
     # model = create_model(nb_classes=13, weight_path='./src/checkpoint-150.pth', pretrain=True)
     model.to(device)
 

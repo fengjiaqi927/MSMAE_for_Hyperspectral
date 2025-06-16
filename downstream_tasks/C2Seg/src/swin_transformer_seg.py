@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-from models_vit_tensor_CD_2 import FPNHEAD
+from src.models_vit_tensor_CD_2 import FPNHEAD
 import torch.utils.checkpoint as cp
 from timm.models.layers import DropPath, to_2tuple
 
@@ -282,6 +282,7 @@ class SwinTransformerSegmentation(nn.Module):
         self.embed_dim = embed_dim
         self.num_classes = num_classes
         self.num_layers = len(depths)
+        self.depths = depths  # 保存depths参数
         
         # --------------------------------------------------------------------------
         # Swin Encoder specifics
@@ -347,7 +348,7 @@ class SwinTransformerSegmentation(nn.Module):
             nn.Conv2d(embed_dim, 128, 1, 1),
             nn.GroupNorm(16, 128),
             nn.GELU(),
-            nn.ConvTranspose2d(128, 256, 8, 8),  # 8x upsampling
+            nn.ConvTranspose2d(128, 256, 4, 4),  # 4x upsampling
             nn.Dropout(dropout)
         )
         
@@ -365,15 +366,16 @@ class SwinTransformerSegmentation(nn.Module):
             nn.Conv2d(embed_dim * 4, 512, 1, 1),
             nn.GroupNorm(32, 512),
             nn.GELU(),
-            nn.ConvTranspose2d(512, 1024, 2, 2),  # 2x upsampling
+            nn.ConvTranspose2d(512, 1024, 4, 4),  # 4x upsampling
             nn.Dropout(dropout)
         )
         
         # Stage 3: embed_dim*8 (768) -> 2048 channels, no upsampling
         self.conv3 = nn.Sequential(
-            nn.Conv2d(embed_dim * 8, 2048, 1, 1),
-            nn.GroupNorm(32, 2048),
+            nn.Conv2d(embed_dim * 8, 1024, 1, 1),
+            nn.GroupNorm(32, 1024),
             nn.GELU(),
+            nn.ConvTranspose2d(1024, 2048, 4, 4),  # 4x upsampling
             nn.Dropout(dropout)
         )
         
@@ -419,20 +421,20 @@ class SwinTransformerSegmentation(nn.Module):
         
         for i_layer in range(self.num_layers):
             # Process blocks in current stage
-            for dep in range(len(self.blocks) // self.num_layers):  # Approximate division
+            for dep in range(self.depths[i_layer]):  # Approximate division
                 if block_idx < len(self.blocks):
                     x, pos_hw = self.blocks[block_idx](x, pos_hw)
                     block_idx += 1
             
             # Apply normalization and collect stage features
-            if i_layer < len(self.norms):
-                stage_x = self.norms[i_layer](x)
-                
-                # Reshape to spatial format for convolution
-                L = stage_x.shape[1]
-                H = W = int(L ** 0.5)
-                stage_x = stage_x.reshape(N, H, W, -1).permute(0, 3, 1, 2)
-                stage_features.append(stage_x)
+
+            stage_x = self.norms[i_layer](x)
+            
+            # Reshape to spatial format for convolution
+            L = stage_x.shape[1]
+            H = W = int(L ** 0.5)
+            stage_x = stage_x.reshape(N, H, W, -1).permute(0, 3, 1, 2)
+            stage_features.append(stage_x)
         
         return stage_features
     
@@ -485,8 +487,8 @@ class SwinTransformerHyperspectralSegmentation(SwinTransformerSegmentation):
     def forward(self, x):
         """Forward pass for hyperspectral segmentation"""
         # Handle temporal dimension similar to ViT
-        if len(x.shape) == 4:  # [N, C, H, W]
-            x = torch.unsqueeze(x, dim=1)  # Add temporal dimension
+        # if len(x.shape) == 4:  # [N, C, H, W]
+        #     x = torch.unsqueeze(x, dim=1)  # Add temporal dimension
         
         # Process through Swin backbone
         stage_features = self.forward_features(x)
@@ -521,3 +523,35 @@ class SwinTransformerHyperspectralSegmentation(SwinTransformerSegmentation):
                           x.shape[2], x.shape[3], device=x.device)
         
         return {'out': x}
+
+
+
+
+# mae-encoder配置
+# def mae_swin_tiny_128(**kwargs):
+#     model = MaskedAutoencoderSwin(
+#         img_size=128, patch_size=4, in_chans=72, stride=16,
+#         embed_dim=96, depths=[2, 2, 6, 2], num_heads=[3, 6, 12, 24],
+#         mlp_ratio=4, window_size=8, # 16 for finetune
+#         decoder_embed_dim=512, decoder_depth=2, decoder_num_heads=16,
+#         norm_layer=partial(nn.LayerNorm, eps=1e-6), **kwargs)
+#     return model
+
+def swin_tiny_patch4(**kwargs):
+    # 从外部传入光谱维度信息
+    model = SwinTransformerHyperspectralSegmentation(
+        # img_size=128, 
+        patch_size=4, 
+        in_chans=72,
+        # num_classes=10,
+        embed_dim=96, 
+        depths=[2, 2, 6, 2], 
+        num_heads=[3, 6, 12, 24],
+        mlp_ratio=4, 
+        window_size=8,
+        posmlp_dim=32,
+        norm_layer=nn.LayerNorm,
+        dropout=0.5,
+        **kwargs
+    )
+    return model
